@@ -1,8 +1,4 @@
-#  USBoverSSH
-#  by ImKKingshuk
-#  Git-  https://github.com/ImKKingshuk/USBoverSSH.git
-#  Copyright © 2024 , @ImKKingshuk | All Rights Reserved.
-#  GNU General Public License v3.0 or later
+#!/usr/bin/perl
 
 
 use strict;
@@ -12,12 +8,39 @@ use IPC::Open3;
 use File::Spec;
 use Config;
 use Carp;
+use IO::Socket::UNIX;
+use IO::Poll;
+use File::Temp;
+
+
+sub print_banner {
+    my @banner = (
+        "******************************************",
+        "*                USBoverSSH              *",
+        "*     USB & Remote Hosts Bridge Tool     *",
+        "*                  v1.4.1                *",
+        "*      ----------------------------      *",
+        "*                        by @ImKKingshuk *",
+        "* Github- https://github.com/ImKKingshuk *",
+        "******************************************"
+    );
+    my $width = 80; 
+    foreach my $line (@banner) {
+        printf "%*s\n", (($width + length($line)) / 2), $line;
+    }
+    say "";
+}
+
 
 my $SSH = 'ssh';
 my $PERL = $Config{perlpath};
 my $drivers = File::Spec->catdir('sys', 'bus', 'usb', 'drivers');
 my $devices = File::Spec->catdir('sys', 'bus', 'usb', 'devices');
 my $verbose;
+
+
+print_banner();
+
 
 eval { $$1 = "\Q$2\E"; shift } or croak $@ while $ARGV[0] =~ /^(\w+)=(.*)/s;
 *DEBUG = sub { say STDERR "@_" } if $verbose;
@@ -48,41 +71,42 @@ if ($ARGV[0] eq 'remote') {
 } else {
     my $cmd = $0 =~ s{^.*/}{}r;
     croak <<"EOT";
-    usage:
-        $cmd USER\@HOST DEV_PATTERN
-            attach single device matching DEV_PATTERN from HOST
+Usage:
+    $cmd USER\@HOST DEV_PATTERN
+        Attach single device matching DEV_PATTERN from HOST
 
-        $cmd USER\@HOST [list]
-            list devices from HOST
+    $cmd USER\@HOST [list]
+        List devices from HOST
 
-        $cmd USER\@HOST find DEV_PATTERN
-            find single device matching DEV_PATTERN on HOST
+    $cmd USER\@HOST find DEV_PATTERN
+        Find single device matching DEV_PATTERN on HOST
 
-        $cmd unbind USER\@HOST DEV_PATTERN
-            unbind single device matching DEV_PATTERN from HOST
+    $cmd unbind USER\@HOST DEV_PATTERN
+        Unbind single device matching DEV_PATTERN from HOST
 
-        $cmd detach USER\@HOST DEV_PATTERN
-            detach single device matching DEV_PATTERN from HOST
+    $cmd detach USER\@HOST DEV_PATTERN
+        Detach single device matching DEV_PATTERN from HOST
 
-        $cmd keep USER\@HOST ...
-            same commands as above, but keep trying to connect to HOST
-            and to reconnect to it if the connection is broken
+    $cmd keep USER\@HOST ...
+        Same commands as above, but keep trying to connect to HOST
+        and to reconnect to it if the connection is broken
 
-        $cmd daemon USER\@HOST ...
-            same as 'keep' but detached from the tty and using syslog
-            for messages and errors
+    $cmd daemon USER\@HOST ...
+        Same as 'keep' but detached from the tty and using syslog
+        for messages and errors
 
-        $cmd list
-        $cmd find DEV_PATTERN
-            same commands as above on the local machine
+    $cmd list
+    $cmd find DEV_PATTERN
+        Same commands as above on the local machine
 
-    DEV_PATTERN is as returned by the 'list' command: a busid like 3-3.1, a
-    vid:pid like 03f0:e111, or a pattern matching the vid:pid, the product name
-    or the serial number.
+DEV_PATTERN is as returned by the 'list' command: a busid like 3-3.1, a
+vid:pid like 03f0:e111, or a pattern matching the vid:pid, the product name
+or the serial number.
 
-    You can add command line options for ssh before USER\@HOST.
+You can add command line options for ssh before USER\@HOST.
 EOT
 }
+
 
 sub readfile {
     open my $h, shift or return "";
@@ -164,11 +188,11 @@ sub local_detach {
 
     for my $f (<$devices/platform/vhci_hcd.*/status*>) {
         open my $h, '<', $f or warn "open $f: $!" and next;
-        <$h>;    # skip header
+        <$h>;   
 
         while (<$h>) {
             my ($hub, $port, $sta, $spd, $dev, $sock_fd, $lbusid) = split;
-            next unless $sta == 6;    # VDEV_ST_USED
+            next unless $sta == 6;    
             push @b, $lbusid;
 
             if ($lbusid =~ $busid) {
@@ -196,7 +220,7 @@ sub find_vhci_and_port {
 
     for my $f (<$devices/platform/vhci_hcd.*/status*>) {
         open my $h, '<', $f or warn "open $f: $!" and next;
-        <$h>;    # skip header
+        <$h>;   
 
         while (<$h>) {
             my ($hub, $port, $sta) = split;
@@ -307,8 +331,8 @@ sub local_script {
     say STDERR sprintf "DEVSPEC: fd=%d bus/dev=%d/%d (%d) speed=%d", $sock->fileno, $bus, $dev, $bus << 16 | $dev, $speed;
     local_attach($sock->fileno, $bus, $dev, $speed);
     close $sock;
-    xsystem @ssh_S, qw(-q -O stop);    # should delete the ctl socket
-    undef $tmpdir;                    # should remove the tmp dir XXX
+    xsystem @ssh_S, qw(-q -O stop);   
+    undef $tmpdir;                   
     say STDERR "   $_" while <$sfrom>;
     return $pid;
 }
@@ -349,7 +373,7 @@ sub remote_script {
     open *STDIN, '+</dev/null' or croak "open /dev/null: $!";
     open $_, '>&', *STDIN or croak "open $_ >/dev/null: $!" for *STDOUT, *STDERR;
     my @args = @_;
-    unshift @args, '-y';    # let ssh use syslog
+    unshift @args, '-y';   
     persistent(@args);
 }
 
@@ -362,8 +386,8 @@ sub list_devices {
         '03' => 'HID',
         '030001' => 'kbd',
         '030002' => 'mouse',
-        '030101' => 'kbd',    # boot
-        '030102' => 'mouse',    # boot
+        '030101' => 'kbd',   
+        '030102' => 'mouse',   
         '07' => 'printer',    '08' => 'UMASS',
         '09' => 'hub',        '0a' => 'CDC',
         '0e' => 'video',
