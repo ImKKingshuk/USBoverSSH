@@ -20,7 +20,7 @@ sub print_banner {
         "*     USB & Remote Hosts Bridge Tool     *",
         "*                  v1.4.1                *",
         "*      ----------------------------      *",
-        "*                        by @ImKKingshuk *",
+        "*                        by  ImKKingshuk *",
         "* Github- https://github.com/ImKKingshuk *",
         "******************************************"
     );
