@@ -285,8 +285,117 @@ impl App {
 
     /// Attach selected device
     pub async fn attach_selected(&mut self) {
-        self.set_status("Attaching device...".to_string());
-        // Implementation would use SshSession and VHCI
+        let idx = self
+            .selected
+            .get(&Pane::RemoteDevices)
+            .copied()
+            .unwrap_or(0);
+
+        // Get selected device from remote devices
+        let (device, host_name) = {
+            let mut all_devices = Vec::new();
+            for (host, devices) in &self.remote_devices {
+                for device in devices {
+                    all_devices.push((device.clone(), host.clone()));
+                }
+            }
+
+            if idx >= all_devices.len() {
+                self.set_status("No device selected".to_string());
+                return;
+            }
+
+            all_devices[idx].clone()
+        };
+
+        let bus_id = device.bus_id.clone();
+        let host_name = host_name.clone();
+        self.set_status(format!("Attaching {}...", bus_id));
+
+        // Find host configuration
+        let host_config = match self.config.hosts.get(&host_name) {
+            Some(h) => h.clone(),
+            None => {
+                self.set_status(format!("Host {} not found in config", host_name));
+                return;
+            }
+        };
+
+        // Create SSH session
+        use usboverssh::{TunnelConfig, SshSession};
+        let tunnel_config = TunnelConfig::new(host_config);
+        let mut session = SshSession::new(tunnel_config);
+
+        // Connect to host
+        if let Err(e) = session.connect().await {
+            self.set_status(format!("Connection failed: {}", e));
+            return;
+        }
+
+        self.set_status(format!("Connected! Attaching {}...", bus_id));
+
+        // Execute remote attach command
+        let attach_cmd = format!("usboverssh remote '{}'", bus_id);
+        let response = match session.exec(&attach_cmd).await {
+            Ok(r) => r,
+            Err(e) => {
+                self.set_status(format!("Remote command failed: {}", e));
+                return;
+            }
+        };
+
+        if response.contains("RESPONSE") {
+            self.set_status(format!("Device {} attached successfully!", device.bus_id));
+
+            // Add to attached devices
+            #[cfg(target_os = "linux")]
+            {
+                use std::fs;
+                use std::path::Path;
+
+                let vhci_base = Path::new("/sys/bus/usb/devices/platform");
+                for entry in fs::read_dir(vhci_base).into_iter().flatten().flatten() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if !name.starts_with("vhci_hcd") {
+                        continue;
+                    }
+
+                    for status_entry in fs::read_dir(entry.path()).into_iter().flatten().flatten() {
+                        let status_name = status_entry.file_name().to_string_lossy().to_string();
+                        if !status_name.starts_with("status") {
+                            continue;
+                        }
+
+                        if let Ok(content) = fs::read_to_string(status_entry.path()) {
+                            for line in content.lines().skip(1) {
+                                let parts: Vec<&str> = line.split_whitespace().collect();
+                                if parts.len() >= 7 {
+                                    let port: u32 = parts[1].parse().unwrap_or(0);
+                                    let status: u32 = parts[2].parse().unwrap_or(0);
+                                    let speed: u32 = parts[3].parse().unwrap_or(0);
+                                    let bus_id = parts[6];
+
+                                    if status == 6 && bus_id == device.bus_id {
+                                        self.attached_devices.push(AttachedDevice {
+                                            port,
+                                            bus_id: bus_id.to_string(),
+                                            host: host_name.clone(),
+                                            speed: speed.to_string(),
+                                        });
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            self.set_status(format!("Attach failed: {}", response));
+        }
+
+        // Disconnect session
+        let _ = session.disconnect().await;
     }
 
     /// Detach selected device

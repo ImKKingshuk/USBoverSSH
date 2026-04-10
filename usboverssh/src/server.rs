@@ -113,6 +113,7 @@ impl Server {
 
             let device_manager = Arc::clone(&self.device_manager);
             let config = self.config.clone();
+            let active_connections = Arc::clone(&self.active_connections);
             let mut shutdown_rx = self.shutdown_tx.subscribe();
 
             handles.push(tokio::spawn(async move {
@@ -131,7 +132,8 @@ impl Server {
 
                                     if conn_count >= config.max_connections {
                                         warn!("Connection rejected: max connections reached ({})", config.max_connections);
-                                        let _ = stream.shutdown(std::net::Shutdown::Both);
+                                        let mut stream = stream;
+                                        let _ = stream.shutdown();
                                         continue;
                                     }
 
@@ -139,7 +141,8 @@ impl Server {
                                     if let Some(ref limiter) = config.rate_limiter {
                                         if !limiter.check(&client_id).await {
                                             warn!("Connection rejected: rate limited for {}", client_id);
-                                            let _ = stream.shutdown(std::net::Shutdown::Both);
+                                            let mut stream = stream;
+                                            let _ = stream.shutdown();
                                             continue;
                                         }
                                     }
