@@ -32,6 +32,7 @@ pub mod audit;
 pub mod circuit_breaker;
 pub mod commands;
 pub mod config;
+pub mod connection_pool;
 pub mod device;
 pub mod error;
 pub mod platform;
