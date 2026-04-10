@@ -36,6 +36,7 @@ pub mod error;
 pub mod platform;
 pub mod protocol;
 pub mod rate_limit;
+pub mod retry;
 pub mod server;
 pub mod tunnel;
 pub mod validation;
