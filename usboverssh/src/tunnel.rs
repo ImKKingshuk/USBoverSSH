@@ -26,6 +26,12 @@ pub struct TunnelConfig {
     pub known_hosts: Option<Arc<KnownHosts>>,
     /// Strict host key checking (reject unknown hosts)
     pub strict_host_key_checking: bool,
+    /// Enable compression for SSH data streams
+    pub compression_enabled: bool,
+    /// Compression level (1-3, 1 = fastest, 3 = best compression)
+    pub compression_level: u32,
+    /// Enable zero-copy I/O
+    pub zero_copy_enabled: bool,
 }
 
 impl TunnelConfig {
@@ -38,6 +44,9 @@ impl TunnelConfig {
             timeout: 30,
             known_hosts: None,
             strict_host_key_checking: true,
+            compression_enabled: true,
+            compression_level: 1,
+            zero_copy_enabled: true,
         }
     }
 
@@ -56,6 +65,19 @@ impl TunnelConfig {
     /// Set strict host key checking
     pub fn with_strict_host_key_checking(mut self, strict: bool) -> Self {
         self.strict_host_key_checking = strict;
+        self
+    }
+
+    /// Set compression enabled
+    pub fn with_compression(mut self, enabled: bool, level: u32) -> Self {
+        self.compression_enabled = enabled;
+        self.compression_level = level.min(3).max(1);
+        self
+    }
+
+    /// Set zero-copy enabled
+    pub fn with_zero_copy(mut self, enabled: bool) -> Self {
+        self.zero_copy_enabled = enabled;
         self
     }
 }

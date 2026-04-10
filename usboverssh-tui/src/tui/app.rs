@@ -1,8 +1,9 @@
 //! TUI Application State
 
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
-use usboverssh::{Config, DeviceInfo, DeviceManager};
+use usboverssh::{cache::DeviceListCache, pool::PoolManager, Config, DeviceInfo, DeviceManager};
 
 /// Active pane in the UI
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -11,6 +12,8 @@ pub enum Pane {
     RemoteDevices,
     AttachedDevices,
     Hosts,
+    PoolStatus,
+    CacheStatus,
 }
 
 /// Popup dialog type
