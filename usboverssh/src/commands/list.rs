@@ -149,7 +149,7 @@ async fn list_local(all: bool, class_filter: Option<String>, config: &Config, fo
         None
     };
 
-    let cache_key = cache.as_ref().map(|c| {
+    let cache_key = cache.as_ref().map(|_c| {
         let filter_str = class_filter.as_deref();
         DeviceListCache::generate_key("local", filter_str)
     });
@@ -169,7 +169,7 @@ async fn list_local(all: bool, class_filter: Option<String>, config: &Config, fo
 
     // Store in cache
     if let (Some(ref cache), Some(ref key)) = (cache, cache_key) {
-        cache.set(key.clone(), devices.clone(), None).await;
+        cache.set(key.clone(), devices.to_vec(), None).await;
     }
 
     display_devices(&devices, all, class_filter, format)

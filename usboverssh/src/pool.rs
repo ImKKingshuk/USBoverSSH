@@ -101,6 +101,7 @@ pub struct DevicePool {
 struct QueueEntry {
     device_bus_id: String,
     user_id: String,
+    #[allow(dead_code)]
     requested_at: DateTime<Utc>,
 }
 
