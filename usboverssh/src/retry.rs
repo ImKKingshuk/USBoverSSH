@@ -213,8 +213,8 @@ mod tests {
         let result = retry_with_backoff(config, || {
             let count = Arc::clone(&attempt_count);
             async move {
-                let current = *count.lock().await;
                 *count.lock().await += 1;
+                let current = *count.lock().await;
                 if current < 2 {
                     Err(Error::Other("connection refused".to_string()))
                 } else {

@@ -55,6 +55,7 @@ fn test_device_filter_matches() {
         bus_id: None,
         product: None,
         serial: None,
+        device_class: None,
     };
 
     assert!(device.matches(&filter));

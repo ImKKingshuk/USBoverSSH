@@ -1,7 +1,6 @@
 // Integration tests for CLI commands
 
 use usboverssh::config::Config;
-use std::path::PathBuf;
 
 #[test]
 fn test_config_load_or_default() {
