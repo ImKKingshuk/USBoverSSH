@@ -33,7 +33,14 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 /// Render header with tabs
 fn render_header(frame: &mut Frame, app: &App, area: Rect) {
-    let titles = vec!["Local Devices", "Remote Devices", "Attached", "Hosts", "Pool Status", "Cache Status"];
+    let titles = vec![
+        "Local Devices",
+        "Remote Devices",
+        "Attached",
+        "Hosts",
+        "Pool Status",
+        "Cache Status",
+    ];
     let selected = match app.active_pane {
         Pane::LocalDevices => 0,
         Pane::RemoteDevices => 1,
@@ -473,14 +480,15 @@ fn render_pool_status(frame: &mut Frame, _app: &App, area: Rect) {
 
 /// Render cache status
 fn render_cache_status(frame: &mut Frame, _app: &App, area: Rect) {
-    let status = Paragraph::new("Device List Cache Status\n\n[Cache statistics will be displayed here]")
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan))
-                .title(" Cache Status ")
-                .title_style(Style::default().bold().fg(Color::Cyan)),
-        )
-        .wrap(Wrap { trim: false });
+    let status =
+        Paragraph::new("Device List Cache Status\n\n[Cache statistics will be displayed here]")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Cyan))
+                    .title(" Cache Status ")
+                    .title_style(Style::default().bold().fg(Color::Cyan)),
+            )
+            .wrap(Wrap { trim: false });
     frame.render_widget(status, area);
 }

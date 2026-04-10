@@ -37,10 +37,12 @@ async fn test_pool_manager_multiple_pools() {
     let pool2 = manager.get_or_create_pool("pool2".to_string()).await;
 
     // Reserve devices in different pools
-    pool1.reserve_device("1-1".to_string(), "user1".to_string(), None)
+    pool1
+        .reserve_device("1-1".to_string(), "user1".to_string(), None)
         .await
         .unwrap();
-    pool2.reserve_device("2-1".to_string(), "user2".to_string(), None)
+    pool2
+        .reserve_device("2-1".to_string(), "user2".to_string(), None)
         .await
         .unwrap();
 
@@ -73,7 +75,9 @@ async fn test_cache_pool_interaction() {
         is_bound: false,
     };
 
-    cache.set("test_key".to_string(), vec![device.clone()], None).await;
+    cache
+        .set("test_key".to_string(), vec![device.clone()], None)
+        .await;
 
     // Retrieve from cache
     let cached = cache.get("test_key").await;

@@ -49,11 +49,13 @@ impl DeviceListCache {
         let entries = self.entries.read().await;
         if let Some(entry) = entries.get(key) {
             if entry.expires_at > Utc::now() {
-                self.total_hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                self.total_hits
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 return Some(entry.devices.clone());
             }
         }
-        self.total_misses.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.total_misses
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         None
     }
 
@@ -61,7 +63,7 @@ impl DeviceListCache {
     pub async fn set(&self, key: String, devices: Vec<DeviceInfo>, ttl_seconds: Option<u64>) {
         let ttl = ttl_seconds.unwrap_or(self.default_ttl_seconds);
         let expires_at = Utc::now() + chrono::Duration::seconds(ttl as i64);
-        
+
         let entry = CacheEntry {
             devices,
             expires_at,
@@ -167,10 +169,12 @@ mod tests {
     async fn test_cache_set_and_get() {
         let cache = DeviceListCache::new(30);
         let devices = vec![create_mock_device("1-1")];
-        
-        cache.set("test_key".to_string(), devices.clone(), None).await;
+
+        cache
+            .set("test_key".to_string(), devices.clone(), None)
+            .await;
         let retrieved = cache.get("test_key").await;
-        
+
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().len(), 1);
     }
@@ -179,15 +183,15 @@ mod tests {
     async fn test_cache_ttl_expiration() {
         let cache = DeviceListCache::new(1); // 1 second TTL
         let devices = vec![create_mock_device("1-1")];
-        
+
         cache.set("test_key".to_string(), devices, None).await;
-        
+
         // Should be available immediately
         assert!(cache.get("test_key").await.is_some());
-        
+
         // Wait for expiration
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        
+
         // Should be expired
         assert!(cache.get("test_key").await.is_none());
     }
@@ -196,10 +200,10 @@ mod tests {
     async fn test_cache_invalidate() {
         let cache = DeviceListCache::new(30);
         let devices = vec![create_mock_device("1-1")];
-        
+
         cache.set("test_key".to_string(), devices, None).await;
         assert!(cache.get("test_key").await.is_some());
-        
+
         cache.invalidate("test_key").await;
         assert!(cache.get("test_key").await.is_none());
     }
@@ -207,15 +211,19 @@ mod tests {
     #[tokio::test]
     async fn test_cache_clear() {
         let cache = DeviceListCache::new(30);
-        
-        cache.set("key1".to_string(), vec![create_mock_device("1-1")], None).await;
-        cache.set("key2".to_string(), vec![create_mock_device("2-1")], None).await;
-        
+
+        cache
+            .set("key1".to_string(), vec![create_mock_device("1-1")], None)
+            .await;
+        cache
+            .set("key2".to_string(), vec![create_mock_device("2-1")], None)
+            .await;
+
         assert!(cache.get("key1").await.is_some());
         assert!(cache.get("key2").await.is_some());
-        
+
         cache.clear().await;
-        
+
         assert!(cache.get("key1").await.is_none());
         assert!(cache.get("key2").await.is_none());
     }
@@ -224,15 +232,15 @@ mod tests {
     async fn test_cache_stats() {
         let cache = DeviceListCache::new(30);
         let devices = vec![create_mock_device("1-1")];
-        
+
         cache.set("test_key".to_string(), devices, None).await;
-        
+
         // Hit
         cache.get("test_key").await;
-        
+
         // Miss
         cache.get("nonexistent").await;
-        
+
         let stats = cache.stats().await;
         assert_eq!(stats.total_hits, 1);
         assert_eq!(stats.total_misses, 1);
@@ -243,12 +251,20 @@ mod tests {
     #[tokio::test]
     async fn test_cache_cleanup_expired() {
         let cache = DeviceListCache::new(1);
-        
-        cache.set("key1".to_string(), vec![create_mock_device("1-1")], Some(1)).await;
-        cache.set("key2".to_string(), vec![create_mock_device("2-1")], Some(100)).await;
-        
+
+        cache
+            .set("key1".to_string(), vec![create_mock_device("1-1")], Some(1))
+            .await;
+        cache
+            .set(
+                "key2".to_string(),
+                vec![create_mock_device("2-1")],
+                Some(100),
+            )
+            .await;
+
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        
+
         let removed = cache.cleanup_expired().await;
         assert_eq!(removed, 1);
         assert_eq!(cache.stats().await.entry_count, 1);
@@ -257,29 +273,39 @@ mod tests {
     #[tokio::test]
     async fn test_cache_key_generation() {
         assert_eq!(DeviceListCache::generate_key("host1", None), "host1");
-        assert_eq!(DeviceListCache::generate_key("host1", Some("vid:1234")), "host1:vid:1234");
+        assert_eq!(
+            DeviceListCache::generate_key("host1", Some("vid:1234")),
+            "host1:vid:1234"
+        );
     }
 
     #[tokio::test]
     async fn test_cache_concurrent_access() {
         let cache = Arc::new(DeviceListCache::new(30));
         let mut handles = vec![];
-        
+
         for i in 0..10 {
             let cache_clone = Arc::clone(&cache);
             let handle = tokio::spawn(async move {
                 let key = format!("key_{}", i);
-                cache_clone.set(key.clone(), vec![create_mock_device(&format!("{}-1", i))], None).await;
+                cache_clone
+                    .set(
+                        key.clone(),
+                        vec![create_mock_device(&format!("{}-1", i))],
+                        None,
+                    )
+                    .await;
                 cache_clone.get(&key).await
             });
             handles.push(handle);
         }
-        
-        let results: Vec<_> = futures::future::join_all(handles).await
+
+        let results: Vec<_> = futures::future::join_all(handles)
+            .await
             .into_iter()
             .map(|r| r.unwrap())
             .collect();
-        
+
         assert_eq!(results.len(), 10);
         assert!(results.iter().all(|r| r.is_some()));
     }

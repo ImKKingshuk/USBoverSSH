@@ -141,10 +141,17 @@ pub async fn run(
 }
 
 /// List local USB devices
-async fn list_local(all: bool, class_filter: Option<String>, config: &Config, format: OutputFormat) -> Result<()> {
+async fn list_local(
+    all: bool,
+    class_filter: Option<String>,
+    config: &Config,
+    format: OutputFormat,
+) -> Result<()> {
     // Use cache if enabled
     let cache = if config.performance.device_cache_ttl_seconds > 0 {
-        Some(Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)))
+        Some(Arc::new(DeviceListCache::new(
+            config.performance.device_cache_ttl_seconds,
+        )))
     } else {
         None
     };
@@ -172,7 +179,7 @@ async fn list_local(all: bool, class_filter: Option<String>, config: &Config, fo
         cache.set(key.clone(), devices.to_vec(), None).await;
     }
 
-    display_devices(&devices, all, class_filter, format)
+    display_devices(devices, all, class_filter, format)
 }
 
 /// List remote USB devices via SSH

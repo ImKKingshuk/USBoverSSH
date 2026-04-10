@@ -3,7 +3,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use usboverssh::{cache::DeviceListCache, pool::{PoolConfig, PoolManager}, Config, DeviceInfo, DeviceManager};
+use usboverssh::{
+    cache::DeviceListCache,
+    pool::{PoolConfig, PoolManager},
+    Config, DeviceInfo, DeviceManager,
+};
 
 /// Active pane in the UI
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -68,8 +72,10 @@ pub struct App {
     /// Refresh interval
     pub refresh_interval: Duration,
     /// Device pool manager
+    #[allow(dead_code)]
     pub pool_manager: Arc<PoolManager>,
     /// Device list cache
+    #[allow(dead_code)]
     pub cache: Arc<DeviceListCache>,
 }
 
@@ -109,7 +115,11 @@ impl App {
         let pool_config = PoolConfig {
             max_reservations: config.pool.max_reservations_per_pool,
             default_timeout_seconds: config.pool.default_timeout_seconds,
-            persistence_path: config.pool.persistence_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+            persistence_path: config
+                .pool
+                .persistence_path
+                .as_ref()
+                .map(|p| p.to_string_lossy().to_string()),
             cleanup_interval_seconds: config.pool.cleanup_interval_seconds,
         };
         let cache_ttl = config.performance.device_cache_ttl_seconds;
@@ -182,7 +192,7 @@ impl App {
             Pane::RemoteDevices => self.remote_devices.values().map(|v| v.len()).sum(),
             Pane::AttachedDevices => self.attached_devices.len(),
             Pane::Hosts => self.hosts.len(),
-            Pane::PoolStatus => 1, // Single status view
+            Pane::PoolStatus => 1,  // Single status view
             Pane::CacheStatus => 1, // Single status view
         }
     }

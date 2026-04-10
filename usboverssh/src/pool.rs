@@ -159,7 +159,7 @@ impl DevicePool {
         let active_count = reservations.values().filter(|r| !r.is_expired()).count();
         if active_count >= self.config.max_reservations {
             drop(reservations);
-            
+
             // Add to queue
             let mut queue = self.queue.write().await;
             queue.push(QueueEntry {
@@ -167,7 +167,7 @@ impl DevicePool {
                 user_id: user_id.clone(),
                 requested_at: Utc::now(),
             });
-            
+
             return Err(Error::Pool(format!(
                 "Pool {} is at capacity ({} reservations). Device {} added to queue.",
                 self.name, self.config.max_reservations, device_bus_id
@@ -197,7 +197,7 @@ impl DevicePool {
     /// Release a device reservation
     pub async fn release_reservation(&self, reservation_id: Uuid) -> Result<()> {
         let mut reservations = self.reservations.write().await;
-        
+
         // Find reservation by ID
         let mut found_device_id = None;
         for (device_id, reservation) in reservations.iter_mut() {
@@ -210,26 +210,32 @@ impl DevicePool {
 
         if let Some(device_id) = found_device_id {
             reservations.remove(&device_id);
-            
+
             // Process queue for this device
             self.process_queue_for_device(&device_id).await;
-            
+
             Ok(())
         } else {
-            Err(Error::Pool(format!("Reservation {} not found", reservation_id)))
+            Err(Error::Pool(format!(
+                "Reservation {} not found",
+                reservation_id
+            )))
         }
     }
 
     /// Release reservation by device bus ID
     pub async fn release_by_device(&self, device_bus_id: &str) -> Result<()> {
         let mut reservations = self.reservations.write().await;
-        
+
         if let Some(mut reservation) = reservations.remove(device_bus_id) {
             reservation.release();
             self.process_queue_for_device(device_bus_id).await;
             Ok(())
         } else {
-            Err(Error::Pool(format!("Device {} is not reserved", device_bus_id)))
+            Err(Error::Pool(format!(
+                "Device {} is not reserved",
+                device_bus_id
+            )))
         }
     }
 
@@ -304,9 +310,10 @@ impl DevicePool {
 
         // Try to reserve for queued users
         for entry in to_reserve {
-            if let Err(_) = self
+            if self
                 .reserve_device(entry.device_bus_id.clone(), entry.user_id.clone(), None)
                 .await
+                .is_err()
             {
                 // If still can't reserve, put back in queue
                 let mut queue = self.queue.write().await;
@@ -318,9 +325,8 @@ impl DevicePool {
     /// Save pool state to file
     pub fn save_to_file(&self, path: &Path) -> Result<()> {
         let reservations = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self.reservations.read().await.clone()
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self.reservations.read().await.clone() })
         });
 
         let state = PoolState {
@@ -588,22 +594,31 @@ mod tests {
     #[tokio::test]
     async fn test_pool_manager() {
         let manager = PoolManager::new(PoolConfig::default());
-        
+
         let pool1 = manager.get_or_create_pool("pool1".to_string()).await;
         let pool2 = manager.get_or_create_pool("pool2".to_string()).await;
-        
-        pool1.reserve_device("1-1".to_string(), "user1".to_string(), None).await.unwrap();
-        pool2.reserve_device("2-1".to_string(), "user2".to_string(), None).await.unwrap();
-        
+
+        pool1
+            .reserve_device("1-1".to_string(), "user1".to_string(), None)
+            .await
+            .unwrap();
+        pool2
+            .reserve_device("2-1".to_string(), "user2".to_string(), None)
+            .await
+            .unwrap();
+
         let statuses = manager.get_all_statuses().await;
         assert_eq!(statuses.len(), 2);
     }
 
     #[tokio::test]
     async fn test_concurrent_reservations() {
-        let pool = Arc::new(DevicePool::new("test_pool".to_string(), PoolConfig::default()));
+        let pool = Arc::new(DevicePool::new(
+            "test_pool".to_string(),
+            PoolConfig::default(),
+        ));
         let mut handles = vec![];
-        
+
         for i in 0..5 {
             let pool_clone = Arc::clone(&pool);
             let handle = tokio::spawn(async move {
@@ -613,12 +628,13 @@ mod tests {
             });
             handles.push(handle);
         }
-        
-        let results: Vec<_> = futures::future::join_all(handles).await
+
+        let results: Vec<_> = futures::future::join_all(handles)
+            .await
             .into_iter()
             .map(|r| r.unwrap())
             .collect();
-        
+
         assert_eq!(results.len(), 5);
         assert!(results.iter().all(|r| r.is_ok()));
     }

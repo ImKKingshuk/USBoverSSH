@@ -71,7 +71,7 @@ impl TunnelConfig {
     /// Set compression enabled
     pub fn with_compression(mut self, enabled: bool, level: u32) -> Self {
         self.compression_enabled = enabled;
-        self.compression_level = level.min(3).max(1);
+        self.compression_level = level.clamp(1, 3);
         self
     }
 
