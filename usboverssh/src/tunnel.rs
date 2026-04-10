@@ -5,6 +5,7 @@
 use crate::config::{HostConfig, SshConfig};
 use crate::error::{Error, Result};
 use async_trait::async_trait;
+use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
@@ -21,6 +22,10 @@ pub struct TunnelConfig {
     pub keepalive: bool,
     /// Connection timeout in seconds
     pub timeout: u64,
+    /// Known hosts for host key verification
+    pub known_hosts: Option<Arc<KnownHosts>>,
+    /// Strict host key checking (reject unknown hosts)
+    pub strict_host_key_checking: bool,
 }
 
 impl TunnelConfig {
@@ -31,12 +36,26 @@ impl TunnelConfig {
             ssh: SshConfig::default(),
             keepalive: true,
             timeout: 30,
+            known_hosts: None,
+            strict_host_key_checking: true,
         }
     }
 
     /// Set custom SSH config
     pub fn with_ssh_config(mut self, ssh: SshConfig) -> Self {
         self.ssh = ssh;
+        self
+    }
+
+    /// Set known hosts for verification
+    pub fn with_known_hosts(mut self, known_hosts: Arc<KnownHosts>) -> Self {
+        self.known_hosts = Some(known_hosts);
+        self
+    }
+
+    /// Set strict host key checking
+    pub fn with_strict_host_key_checking(mut self, strict: bool) -> Self {
+        self.strict_host_key_checking = strict;
         self
     }
 }
@@ -97,7 +116,10 @@ impl SshSession {
         };
 
         // Create handler and connect
-        let handler = ClientHandler::new();
+        let known_hosts = self.config.known_hosts.clone();
+        let hostname = self.config.host.hostname.clone();
+        let strict = self.config.strict_host_key_checking;
+        let handler = ClientHandler::new(known_hosts, hostname, strict);
         let mut handle = russh::client::connect(Arc::new(ssh_config), &addr, handler)
             .await
             .map_err(|e| Error::SshConnection(e.to_string()))?;
@@ -285,12 +307,25 @@ impl SshTunnel {
 struct ClientHandler {
     /// Server public key (stored for verification)
     server_key: Arc<Mutex<Option<russh_keys::PublicKey>>>,
+    /// Known hosts for verification
+    known_hosts: Option<Arc<KnownHosts>>,
+    /// Hostname for verification
+    hostname: String,
+    /// Strict host key checking
+    strict_host_key_checking: bool,
 }
 
 impl ClientHandler {
-    fn new() -> Self {
+    fn new(
+        known_hosts: Option<Arc<KnownHosts>>,
+        hostname: String,
+        strict_host_key_checking: bool,
+    ) -> Self {
         Self {
             server_key: Arc::new(Mutex::new(None)),
+            known_hosts,
+            hostname,
+            strict_host_key_checking,
         }
     }
 }
@@ -306,8 +341,30 @@ impl russh::client::Handler for ClientHandler {
         // Store the server key
         *self.server_key.lock().await = Some(server_public_key.clone());
 
-        // In production, verify against known_hosts
-        // For now, accept all keys (like StrictHostKeyChecking=no)
+        // Convert public key to string format (use Debug for russh_keys::PublicKey)
+        let key_str = format!("{:?}", server_public_key);
+
+        // Verify against known_hosts if available
+        if let Some(known_hosts) = &self.known_hosts {
+            if known_hosts.is_known(&self.hostname, &key_str).await {
+                tracing::info!("Host key verified for {}", self.hostname);
+                return Ok(true);
+            }
+
+            // Unknown host key
+            if self.strict_host_key_checking {
+                tracing::warn!("Unknown host key for {} (strict checking enabled)", self.hostname);
+                return Err(russh::Error::Disconnect);
+            } else {
+                // In non-strict mode, add to known_hosts
+                tracing::warn!("Adding unknown host key for {}", self.hostname);
+                let _ = known_hosts.add(&self.hostname, &key_str).await;
+                return Ok(true);
+            }
+        }
+
+        // No known_hosts configured - accept all (like StrictHostKeyChecking=no)
+        tracing::warn!("No known_hosts configured, accepting host key for {}", self.hostname);
         Ok(true)
     }
 }
@@ -401,4 +458,91 @@ fn expand_tilde(path: &Path) -> PathBuf {
         }
     }
     path.to_path_buf()
+}
+
+/// Known hosts management
+#[derive(Debug)]
+pub struct KnownHosts {
+    path: PathBuf,
+    entries: Arc<Mutex<std::collections::HashMap<String, String>>>,
+}
+
+impl KnownHosts {
+    /// Load known hosts from file
+    pub fn load(path: Option<PathBuf>) -> Result<Self> {
+        let path = path.unwrap_or_else(|| {
+            let mut home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+            home.push(".ssh");
+            home.push("known_hosts");
+            home
+        });
+
+        let mut entries = std::collections::HashMap::new();
+
+        if path.exists() {
+            let file = std::fs::File::open(&path).map_err(|e| {
+                Error::Config(format!("Failed to open known_hosts: {}", e))
+            })?;
+
+            let reader = std::io::BufReader::new(file);
+            for line in reader.lines() {
+                let line = line.map_err(|e| Error::Config(format!("Failed to read known_hosts: {}", e)))?;
+                let line = line.trim();
+
+                // Skip comments and empty lines
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+
+                // Parse known_hosts entry: hostname keytype key
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    let hostname = parts[0].to_string();
+                    let key = parts[1..].join(" ");
+                    entries.insert(hostname, key);
+                }
+            }
+        }
+
+        Ok(Self {
+            path,
+            entries: Arc::new(Mutex::new(entries)),
+        })
+    }
+
+    /// Check if a host key is known
+    pub async fn is_known(&self, hostname: &str, key: &str) -> bool {
+        let entries = self.entries.lock().await;
+        if let Some(stored_key) = entries.get(hostname) {
+            stored_key == key
+        } else {
+            false
+        }
+    }
+
+    /// Add a host key to known hosts
+    pub async fn add(&self, hostname: &str, key: &str) -> Result<()> {
+        {
+            let mut entries = self.entries.lock().await;
+            entries.insert(hostname.to_string(), key.to_string());
+        }
+
+        // Append to file
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.path)
+            .map_err(|e| Error::Config(format!("Failed to open known_hosts for writing: {}", e)))?;
+
+        use std::io::Write;
+        writeln!(file, "{} {}", hostname, key)
+            .map_err(|e| Error::Config(format!("Failed to write to known_hosts: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Get known hosts file path
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
 }

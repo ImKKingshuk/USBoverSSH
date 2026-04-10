@@ -28,6 +28,7 @@
 //! }
 //! ```
 
+pub mod audit;
 pub mod commands;
 pub mod config;
 pub mod device;
@@ -36,6 +37,7 @@ pub mod platform;
 pub mod protocol;
 pub mod server;
 pub mod tunnel;
+pub mod validation;
 
 pub use commands::OutputFormat;
 pub use config::Config;
