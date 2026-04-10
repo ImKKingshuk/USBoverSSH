@@ -56,6 +56,16 @@ async fn list_local(all: bool, class_filter: Option<String>, config: &Config, fo
         cache.set(key.clone(), devices.clone(), None).await;
     }
 
+    display_devices(&devices, all, class_filter, format)
+}
+
+/// Display devices to stdout
+fn display_devices(
+    devices: &[crate::DeviceInfo],
+    all: bool,
+    class_filter: Option<String>,
+    format: OutputFormat,
+) -> Result<()> {
     if devices.is_empty() {
         match format {
             OutputFormat::Text => {
