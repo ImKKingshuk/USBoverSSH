@@ -343,9 +343,9 @@ pub struct PoolStatus {
 
 /// Pool state for persistence
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct PoolState {
-    name: String,
-    reservations: Vec<Reservation>,
+pub struct PoolState {
+    pub name: String,
+    pub reservations: Vec<Reservation>,
 }
 
 /// Pool manager for multiple pools
