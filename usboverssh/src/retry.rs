@@ -118,6 +118,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
 
     #[test]
     fn test_retry_config_default() {
@@ -183,16 +185,19 @@ mod tests {
     #[tokio::test]
     async fn test_retry_success_on_first_attempt() {
         let config = RetryConfig::default();
-        let mut attempt_count = 0;
+        let attempt_count = Arc::new(Mutex::new(0));
 
         let result = retry_with_backoff(config, || {
-            attempt_count += 1;
-            async { Ok::<_, Error>(42) }
+            let count = Arc::clone(&attempt_count);
+            async move {
+                *count.lock().await += 1;
+                Ok::<_, Error>(42)
+            }
         })
         .await;
 
         assert_eq!(result.unwrap(), 42);
-        assert_eq!(attempt_count, 1);
+        assert_eq!(*attempt_count.lock().await, 1);
     }
 
     #[tokio::test]
@@ -203,12 +208,14 @@ mod tests {
             max_delay: Duration::from_millis(100),
             multiplier: 1.0,
         };
-        let mut attempt_count = 0;
+        let attempt_count = Arc::new(Mutex::new(0));
 
         let result = retry_with_backoff(config, || {
-            attempt_count += 1;
-            async {
-                if attempt_count < 2 {
+            let count = Arc::clone(&attempt_count);
+            async move {
+                let current = *count.lock().await;
+                *count.lock().await += 1;
+                if current < 2 {
                     Err(Error::Other("connection refused".to_string()))
                 } else {
                     Ok::<_, Error>(42)
@@ -218,7 +225,7 @@ mod tests {
         .await;
 
         assert_eq!(result.unwrap(), 42);
-        assert_eq!(attempt_count, 2);
+        assert_eq!(*attempt_count.lock().await, 2);
     }
 
     #[tokio::test]
@@ -229,15 +236,18 @@ mod tests {
             max_delay: Duration::from_millis(100),
             multiplier: 1.0,
         };
-        let mut attempt_count = 0;
+        let attempt_count = Arc::new(Mutex::new(0));
 
         let result = retry_with_backoff(config, || {
-            attempt_count += 1;
-            async { Err::<(), Error>(Error::Other("connection refused".to_string())) }
+            let count = Arc::clone(&attempt_count);
+            async move {
+                *count.lock().await += 1;
+                Err::<(), Error>(Error::Other("connection refused".to_string()))
+            }
         })
         .await;
 
         assert!(result.is_err());
-        assert_eq!(attempt_count, 2);
+        assert_eq!(*attempt_count.lock().await, 2);
     }
 }

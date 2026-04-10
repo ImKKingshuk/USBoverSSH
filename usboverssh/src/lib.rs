@@ -29,6 +29,7 @@
 //! ```
 
 pub mod audit;
+pub mod circuit_breaker;
 pub mod commands;
 pub mod config;
 pub mod device;
