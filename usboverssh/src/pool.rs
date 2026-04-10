@@ -2,7 +2,6 @@
 //!
 //! Provides shared device pools with reservation system for multi-user access.
 
-use crate::config::PoolConfig;
 use crate::error::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -77,10 +76,26 @@ impl Default for PoolConfig {
     fn default() -> Self {
         Self {
             max_reservations: 10,
-            default_timeout_seconds: 1800, // 30 minutes
+            default_timeout_seconds: 1800,
             persistence_path: None,
-            cleanup_interval_seconds: 300, // 5 minutes
+            cleanup_interval_seconds: 300,
         }
+    }
+}
+
+impl PoolConfig {
+    pub fn validate(&self) -> Result<()> {
+        if self.default_timeout_seconds == 0 {
+            return Err(Error::Config(
+                "default_timeout_seconds must be greater than 0".to_string(),
+            ));
+        }
+        if self.max_reservations == 0 {
+            return Err(Error::Config(
+                "max_reservations must be greater than 0".to_string(),
+            ));
+        }
+        Ok(())
     }
 }
 

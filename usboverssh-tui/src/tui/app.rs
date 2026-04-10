@@ -158,10 +158,12 @@ impl App {
     /// Switch to previous pane
     pub fn prev_pane(&mut self) {
         self.active_pane = match self.active_pane {
-            Pane::LocalDevices => Pane::Hosts,
+            Pane::LocalDevices => Pane::CacheStatus,
             Pane::RemoteDevices => Pane::LocalDevices,
             Pane::AttachedDevices => Pane::RemoteDevices,
             Pane::Hosts => Pane::AttachedDevices,
+            Pane::PoolStatus => Pane::Hosts,
+            Pane::CacheStatus => Pane::PoolStatus,
         };
     }
 
