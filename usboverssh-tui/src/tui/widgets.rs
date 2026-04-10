@@ -456,3 +456,31 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         ])
         .split(popup_layout[1])[1]
 }
+
+/// Render pool status
+fn render_pool_status(frame: &mut Frame, _app: &App, area: Rect) {
+    let status = Paragraph::new("Device Pool Status\n\n[Pool statistics will be displayed here]")
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan))
+                .title(" Pool Status ")
+                .title_style(Style::default().bold().fg(Color::Cyan)),
+        )
+        .wrap(Wrap { trim: false });
+    frame.render_widget(status, area);
+}
+
+/// Render cache status
+fn render_cache_status(frame: &mut Frame, _app: &App, area: Rect) {
+    let status = Paragraph::new("Device List Cache Status\n\n[Cache statistics will be displayed here]")
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan))
+                .title(" Cache Status ")
+                .title_style(Style::default().bold().fg(Color::Cyan)),
+        )
+        .wrap(Wrap { trim: false });
+    frame.render_widget(status, area);
+}

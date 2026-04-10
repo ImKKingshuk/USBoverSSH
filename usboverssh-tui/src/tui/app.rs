@@ -237,6 +237,12 @@ impl App {
                     }
                 }
             }
+            Pane::PoolStatus => {
+                // Pool status actions
+            }
+            Pane::CacheStatus => {
+                // Cache status actions
+            }
         }
     }
 
