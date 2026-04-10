@@ -282,6 +282,14 @@ artifacts/
 bin/
 pkg/
 
+
+
+# Node / frontend (if generated locally)
+node_modules/
+next-step-plan.md
+implementation_plan.md
+AGENTS.md
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Crash reports and dumps
 # ══════════════════════════════════════════════════════════════════════════════
