@@ -164,8 +164,6 @@ impl ConnectionPool {
         config: &ConnectionPoolConfig,
     ) {
         let mut pool = pool.lock().await;
-        let now = Instant::now();
-
         pool.retain(|_, conn| {
             conn.created_at.elapsed() < config.max_lifetime
                 && conn.last_used.elapsed() < config.idle_timeout
