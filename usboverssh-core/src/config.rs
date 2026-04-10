@@ -2,14 +2,14 @@
 //!
 //! Handles loading, saving, and managing USBoverSSH configuration.
 
-use crate::error::{Error, Result};
 use crate::device::DeviceFilter;
+use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Main configuration structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
     /// General settings
@@ -24,19 +24,6 @@ pub struct Config {
     pub hosts: HashMap<String, HostConfig>,
     /// Auto-attach rules
     pub auto_attach: Vec<AutoAttachRule>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            ssh: SshConfig::default(),
-            logging: LoggingConfig::default(),
-            tui: TuiConfig::default(),
-            hosts: HashMap::new(),
-            auto_attach: Vec::new(),
-        }
-    }
 }
 
 impl Config {
@@ -54,9 +41,8 @@ impl Config {
     pub fn load(path: &Path) -> Result<Self> {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| Error::Config(format!("Failed to read config: {}", e)))?;
-        
-        toml::from_str(&contents)
-            .map_err(|e| Error::ConfigParse(format!("Invalid config: {}", e)))
+
+        toml::from_str(&contents).map_err(|e| Error::ConfigParse(format!("Invalid config: {}", e)))
     }
 
     /// Save configuration to default location
@@ -72,13 +58,13 @@ impl Config {
             std::fs::create_dir_all(parent)
                 .map_err(|e| Error::Config(format!("Failed to create config dir: {}", e)))?;
         }
-        
+
         let contents = toml::to_string_pretty(self)
             .map_err(|e| Error::Config(format!("Failed to serialize config: {}", e)))?;
-        
+
         std::fs::write(path, contents)
             .map_err(|e| Error::Config(format!("Failed to write config: {}", e)))?;
-        
+
         Ok(())
     }
 
@@ -93,7 +79,7 @@ impl Config {
         if let Some(host) = self.hosts.get(name_or_spec) {
             return host.clone();
         }
-        
+
         // Parse as user@host[:port]
         HostConfig::parse(name_or_spec)
     }
@@ -247,7 +233,7 @@ impl HostConfig {
     /// Parse host specification like "user@host:port"
     pub fn parse(spec: &str) -> Self {
         let mut config = Self::default();
-        
+
         let (user_host, port) = if let Some(idx) = spec.rfind(':') {
             if let Ok(p) = spec[idx + 1..].parse::<u16>() {
                 (&spec[..idx], Some(p))
@@ -257,18 +243,18 @@ impl HostConfig {
         } else {
             (spec, None)
         };
-        
+
         if let Some(port) = port {
             config.port = port;
         }
-        
+
         if let Some(idx) = user_host.find('@') {
             config.user = user_host[..idx].to_string();
             config.hostname = user_host[idx + 1..].to_string();
         } else {
             config.hostname = user_host.to_string();
         }
-        
+
         config
     }
 

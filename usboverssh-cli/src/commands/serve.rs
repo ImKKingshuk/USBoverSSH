@@ -21,10 +21,7 @@ pub async fn run(
     );
 
     // Build device filters
-    let filters: Vec<DeviceFilter> = devices
-        .iter()
-        .map(|d| DeviceFilter::parse(d))
-        .collect();
+    let filters: Vec<DeviceFilter> = devices.iter().map(|d| DeviceFilter::parse(d)).collect();
 
     // Create server configuration
     let server_config = usboverssh_core::server::ServerConfig {
@@ -75,10 +72,8 @@ pub async fn run(
     // Setup Ctrl+C handler
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
     let shutdown_tx = std::sync::Mutex::new(Some(shutdown_tx));
-    
-    let server_handle = tokio::spawn(async move {
-        server.run().await
-    });
+
+    let server_handle = tokio::spawn(async move { server.run().await });
 
     ctrlc::set_handler(move || {
         if let Some(tx) = shutdown_tx.lock().unwrap().take() {

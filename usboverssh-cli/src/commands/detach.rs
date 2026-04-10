@@ -24,7 +24,7 @@ pub async fn run(device_pattern: String, _config: &Config) -> Result<()> {
 }
 
 /// Detach a specific device
-async fn detach_device(pattern: &str) -> Result<()> {
+async fn detach_device(_pattern: &str) -> Result<()> {
     #[cfg(target_os = "linux")]
     {
         use std::fs;
@@ -93,10 +93,7 @@ async fn detach_device(pattern: &str) -> Result<()> {
 
     #[cfg(not(target_os = "linux"))]
     {
-        println!(
-            "  {} Detach is only supported on Linux",
-            "⚠".yellow()
-        );
+        println!("  {} Detach is only supported on Linux", "⚠".yellow());
     }
 
     Ok(())

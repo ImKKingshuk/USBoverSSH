@@ -4,7 +4,7 @@
 
 use crate::device::{DeviceFilter, DeviceManager};
 use crate::error::{Error, Result};
-use crate::protocol::{OpCode, UsbIpDeviceDescriptor, UsbIpHeader, UsbIpProtocol, USBIP_VERSION};
+use crate::protocol::{OpCode, UsbIpDeviceDescriptor, UsbIpHeader, USBIP_VERSION};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
@@ -52,7 +52,7 @@ impl Server {
     /// Create a new server
     pub fn new(config: ServerConfig) -> Result<Self> {
         let (shutdown_tx, _) = broadcast::channel(1);
-        
+
         Ok(Self {
             config,
             device_manager: Arc::new(Mutex::new(DeviceManager::new()?)),
@@ -64,11 +64,11 @@ impl Server {
     pub async fn available_devices(&self) -> Result<Vec<crate::device::DeviceInfo>> {
         let mut manager = self.device_manager.lock().await;
         let devices = manager.list_devices()?;
-        
+
         if self.config.export_all {
             return Ok(devices.to_vec());
         }
-        
+
         let filtered: Vec<_> = devices
             .iter()
             .filter(|d| {
@@ -79,7 +79,7 @@ impl Server {
             })
             .cloned()
             .collect();
-        
+
         Ok(filtered)
     }
 
@@ -99,13 +99,13 @@ impl Server {
             let listener = TcpListener::bind(&bind_addr)
                 .await
                 .map_err(|e| Error::ServerBindFailed(format!("{}: {}", bind_addr, e)))?;
-            
+
             info!("USB/IP server listening on {}", bind_addr);
-            
+
             let device_manager = Arc::clone(&self.device_manager);
             let config = self.config.clone();
             let mut shutdown_rx = self.shutdown_tx.subscribe();
-            
+
             handles.push(tokio::spawn(async move {
                 loop {
                     tokio::select! {
@@ -139,16 +139,16 @@ impl Server {
         if let Some(ref socket_path) = self.config.unix_socket {
             // Remove existing socket
             let _ = std::fs::remove_file(socket_path);
-            
+
             let listener = UnixListener::bind(socket_path)
                 .map_err(|e| Error::ServerBindFailed(format!("{}: {}", socket_path, e)))?;
-            
+
             info!("USB/IP server listening on {}", socket_path);
-            
+
             let device_manager = Arc::clone(&self.device_manager);
             let config = self.config.clone();
             let mut shutdown_rx = self.shutdown_tx.subscribe();
-            
+
             handles.push(tokio::spawn(async move {
                 loop {
                     tokio::select! {
@@ -221,7 +221,7 @@ where
 {
     // Read header
     let header = UsbIpHeader::read_from(stream).await?;
-    
+
     // Check version
     if header.version != USBIP_VERSION {
         warn!(
@@ -229,7 +229,7 @@ where
             USBIP_VERSION, header.version
         );
     }
-    
+
     match OpCode::from_u16(header.code) {
         Some(OpCode::ReqDevlist) => {
             debug!("Device list request");
@@ -241,11 +241,17 @@ where
         }
         Some(code) => {
             warn!("Unsupported opcode: {:?}", code);
-            Err(Error::UsbIpProtocol(format!("Unsupported opcode: {:04x}", header.code)))
+            Err(Error::UsbIpProtocol(format!(
+                "Unsupported opcode: {:04x}",
+                header.code
+            )))
         }
         None => {
             warn!("Unknown opcode: {:04x}", header.code);
-            Err(Error::UsbIpProtocol(format!("Unknown opcode: {:04x}", header.code)))
+            Err(Error::UsbIpProtocol(format!(
+                "Unknown opcode: {:04x}",
+                header.code
+            )))
         }
     }
 }
@@ -262,7 +268,7 @@ where
     // Get available devices
     let mut manager = device_manager.lock().await;
     let devices = manager.list_devices()?;
-    
+
     // Filter devices
     let filtered: Vec<_> = devices
         .iter()
@@ -271,36 +277,36 @@ where
             if matches!(d.device_class, crate::device::DeviceClass::Hub) {
                 return false;
             }
-            
+
             if config.export_all || config.device_filters.is_empty() {
                 return true;
             }
             config.device_filters.iter().any(|f| d.matches(f))
         })
         .collect();
-    
+
     // Send reply header
     let reply = UsbIpHeader::reply(OpCode::RepDevlist, 0);
     reply.write_to(stream).await?;
-    
+
     // Send device count
     let count = filtered.len() as u32;
     stream.write_all(&count.to_be_bytes()).await?;
-    
+
     // Send device descriptors
     for device in filtered {
         let desc = UsbIpDeviceDescriptor::from_device_info(device);
         stream.write_all(&desc.to_bytes()).await?;
-        
+
         // Send interface descriptors (simplified)
         for _ in 0..desc.num_interfaces {
             let iface = [0u8; 4]; // interface class, subclass, protocol, padding
             stream.write_all(&iface).await?;
         }
     }
-    
+
     stream.flush().await?;
-    
+
     Ok(())
 }
 
@@ -315,13 +321,13 @@ where
     // Read bus ID
     let mut bus_id_buf = [0u8; 32];
     stream.read_exact(&mut bus_id_buf).await?;
-    
+
     let bus_id = String::from_utf8_lossy(&bus_id_buf)
         .trim_matches('\0')
         .to_string();
-    
+
     debug!("Import request for bus_id: {}", bus_id);
-    
+
     // Find device
     let mut manager = device_manager.lock().await;
     let device = match manager.find_by_pattern(&bus_id) {
@@ -333,30 +339,30 @@ where
             return Err(e);
         }
     };
-    
+
     drop(manager); // Release lock
-    
+
     // Bind device to usbip-host driver (Linux only)
     #[cfg(target_os = "linux")]
     {
         crate::platform::linux::bind_device(&bus_id)?;
     }
-    
+
     // Send success reply with device descriptor
     let reply = UsbIpHeader::reply(OpCode::RepImport, 0);
     reply.write_to(stream).await?;
-    
+
     let desc = UsbIpDeviceDescriptor::from_device_info(&device);
     stream.write_all(&desc.to_bytes()).await?;
     stream.flush().await?;
-    
+
     info!("Device {} exported successfully", bus_id);
-    
+
     // At this point, the socket becomes the USB/IP data channel
     // The kernel takes over via usbip_sockfd sysfs interface
-    
+
     // Keep connection alive for USB/IP data transfer
     // This is handled by the kernel after we pass the socket fd
-    
+
     Ok(())
 }

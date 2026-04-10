@@ -28,7 +28,7 @@ pub async fn run(connect_on_start: bool, config: Config) -> Result<()> {
 
     // Create app state
     let mut app = App::new(config);
-    
+
     if connect_on_start {
         app.connect_all_hosts().await;
     }

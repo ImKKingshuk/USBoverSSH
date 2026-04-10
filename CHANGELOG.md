@@ -70,13 +70,5 @@ All notable changes to this project will be documented in this file.
   - Help popup with keybindings
   - Connect dialog
   - Status bar with keybinding hints
-  - Auto-refresh
-  - Mouse support
 
-- **Developer Experience**:
-  - Shell completion generation (bash, zsh, fish, elvish, powershell)
-  - Comprehensive error types with suggestions
-  - Structured logging with tracing
-  - Cargo workspace structure
-  - CI/CD workflows (pre-release checks, release automation)
-  - Security scanning (cargo-deny, clippy, typos)
+

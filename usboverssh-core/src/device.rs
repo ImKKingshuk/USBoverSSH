@@ -200,16 +200,14 @@ impl DeviceInfo {
 
     /// Get display name (product name or vid:pid)
     pub fn display_name(&self) -> String {
-        self.product
-            .clone()
-            .unwrap_or_else(|| self.vid_pid())
+        self.product.clone().unwrap_or_else(|| self.vid_pid())
     }
 
     /// Get full description
     pub fn description(&self) -> String {
         let mut parts = vec![self.bus_id.clone()];
         parts.push(self.vid_pid());
-        
+
         if let Some(ref product) = self.product {
             parts.push(product.clone());
         }
@@ -219,7 +217,7 @@ impl DeviceInfo {
         if let Some(ref serial) = self.serial {
             parts.push(format!("[{}]", serial));
         }
-        
+
         parts.join(" ")
     }
 
@@ -274,7 +272,7 @@ impl DeviceFilter {
     /// - Serial/Product name: any other string
     pub fn parse(pattern: &str) -> Self {
         let mut filter = Self::new();
-        
+
         // Check for bus ID pattern (e.g., "3-1.2")
         if regex::Regex::new(r"^\d+-\d+(\.\d+)*$")
             .unwrap()
@@ -283,7 +281,7 @@ impl DeviceFilter {
             filter.bus_id = Some(pattern.to_string());
             return filter;
         }
-        
+
         // Check for VID:PID pattern (e.g., "03f0:e111")
         if let Some(caps) = regex::Regex::new(r"^([0-9a-fA-F]{1,4}):([0-9a-fA-F]{1,4})$")
             .unwrap()
@@ -293,7 +291,7 @@ impl DeviceFilter {
             filter.product_id = Some(u16::from_str_radix(&caps[2], 16).unwrap_or(0));
             return filter;
         }
-        
+
         // Otherwise, treat as product/serial pattern
         filter.product = Some(pattern.to_string());
         filter.serial = Some(pattern.to_string());
@@ -325,21 +323,23 @@ impl DeviceFilter {
 
         // Check serial (OR with product)
         if self.serial.is_some() || self.product.is_some() {
-            let serial_match = self.serial.as_ref().map_or(false, |s| {
-                device.serial.as_ref().map_or(false, |ds| glob_match(s, ds))
-            });
-            let product_match = self.product.as_ref().map_or(false, |p| {
-                device.product.as_ref().map_or(false, |dp| glob_match(p, dp))
-            });
-            
+            let serial_match = self
+                .serial
+                .as_ref()
+                .is_some_and(|s| device.serial.as_ref().is_some_and(|ds| glob_match(s, ds)));
+            let product_match = self
+                .product
+                .as_ref()
+                .is_some_and(|p| device.product.as_ref().is_some_and(|dp| glob_match(p, dp)));
+
             // If both are specified, either can match
             if self.serial.is_some() && self.product.is_some() {
                 if !serial_match && !product_match {
                     return false;
                 }
-            } else if self.serial.is_some() && !serial_match {
-                return false;
-            } else if self.product.is_some() && !product_match {
+            } else if (self.serial.is_some() && !serial_match)
+                || (self.product.is_some() && !product_match)
+            {
                 return false;
             }
         }
@@ -359,19 +359,19 @@ impl DeviceFilter {
 pub fn glob_match(pattern: &str, text: &str) -> bool {
     let pattern_lower = pattern.to_lowercase();
     let text_lower = text.to_lowercase();
-    
+
     if !pattern_lower.contains('*') {
         return text_lower.contains(&pattern_lower);
     }
-    
+
     let parts: Vec<&str> = pattern_lower.split('*').collect();
     let mut pos = 0;
-    
+
     for (i, part) in parts.iter().enumerate() {
         if part.is_empty() {
             continue;
         }
-        
+
         if let Some(found) = text_lower[pos..].find(part) {
             if i == 0 && found != 0 {
                 return false; // Must match from start if no leading *
@@ -381,12 +381,12 @@ pub fn glob_match(pattern: &str, text: &str) -> bool {
             return false;
         }
     }
-    
+
     // If pattern doesn't end with *, must match to end
     if !pattern_lower.ends_with('*') && pos != text_lower.len() {
         return false;
     }
-    
+
     true
 }
 
@@ -419,9 +419,9 @@ impl DeviceManager {
     /// Find a single device matching the filter
     pub fn find_device(&mut self, filter: &DeviceFilter) -> Result<&DeviceInfo> {
         self.refresh()?;
-        
+
         let matches: Vec<_> = self.devices.iter().filter(|d| d.matches(filter)).collect();
-        
+
         match matches.len() {
             0 => Err(Error::DeviceNotFound(format!("{:?}", filter))),
             1 => Ok(matches[0]),

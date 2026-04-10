@@ -17,7 +17,7 @@ struct AttachedDevice {
 }
 
 /// Run the status command
-pub async fn run(config: &Config, format: OutputFormat) -> Result<()> {
+pub async fn run(_config: &Config, format: OutputFormat) -> Result<()> {
     let devices = get_attached_devices()?;
 
     match format {
@@ -66,7 +66,7 @@ pub async fn run(config: &Config, format: OutputFormat) -> Result<()> {
 
 /// Get currently attached devices from VHCI
 fn get_attached_devices() -> Result<Vec<AttachedDevice>> {
-    let mut devices = Vec::new();
+    let devices = Vec::new();
 
     #[cfg(target_os = "linux")]
     {

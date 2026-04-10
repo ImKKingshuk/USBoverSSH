@@ -5,8 +5,7 @@
 use crate::config::{HostConfig, SshConfig};
 use crate::error::{Error, Result};
 use async_trait::async_trait;
-use std::future::Future;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::sync::Mutex;
@@ -88,7 +87,7 @@ impl SshSession {
 
         // Resolve address
         let addr = format!("{}:{}", self.config.host.hostname, self.config.host.port);
-        
+
         // Create SSH config
         let ssh_config = russh::client::Config {
             inactivity_timeout: Some(std::time::Duration::from_secs(
@@ -99,13 +98,9 @@ impl SshSession {
 
         // Create handler and connect
         let handler = ClientHandler::new();
-        let mut handle = russh::client::connect(
-            Arc::new(ssh_config),
-            &addr,
-            handler,
-        )
-        .await
-        .map_err(|e| Error::SshConnection(e.to_string()))?;
+        let mut handle = russh::client::connect(Arc::new(ssh_config), &addr, handler)
+            .await
+            .map_err(|e| Error::SshConnection(e.to_string()))?;
 
         *self.state.lock().await = SessionState::Authenticating;
 
@@ -119,18 +114,18 @@ impl SshSession {
     }
 
     /// Authenticate with the remote host
-    async fn authenticate(
-        &self,
-        handle: &mut russh::client::Handle<ClientHandler>,
-    ) -> Result<()> {
+    async fn authenticate(&self, handle: &mut russh::client::Handle<ClientHandler>) -> Result<()> {
         let user = &self.config.host.user;
 
         // Try key-based authentication first
-        if let Some(ref identity_file) = self.config.host.identity_file.as_ref().or(
-            self.config.ssh.identity_file.as_ref()
-        ) {
+        if let Some(identity_file) = self.config.host.identity_file.as_ref().or(self
+            .config
+            .ssh
+            .identity_file
+            .as_ref())
+        {
             let key_path = expand_tilde(identity_file);
-            
+
             if key_path.exists() {
                 match russh_keys::load_secret_key(&key_path, None) {
                     Ok(key) => {
@@ -163,11 +158,7 @@ impl SshSession {
                 if key_path.exists() {
                     if let Ok(key) = russh_keys::load_secret_key(&key_path, None) {
                         let key_pair = Arc::new(key);
-                        if handle
-                            .authenticate_publickey(user, key_pair)
-                            .await
-                            .is_ok()
-                        {
+                        if handle.authenticate_publickey(user, key_pair).await.is_ok() {
                             return Ok(());
                         }
                     }
@@ -183,9 +174,10 @@ impl SshSession {
 
     /// Execute a command on the remote host
     pub async fn exec(&self, command: &str) -> Result<String> {
-        let handle = self.handle.as_ref().ok_or(Error::SshConnection(
-            "Not connected".to_string(),
-        ))?;
+        let handle = self
+            .handle
+            .as_ref()
+            .ok_or(Error::SshConnection("Not connected".to_string()))?;
 
         let mut channel = handle
             .lock()
@@ -200,7 +192,7 @@ impl SshSession {
             .map_err(|e| Error::SshConnection(e.to_string()))?;
 
         let mut output = Vec::new();
-        
+
         loop {
             match channel.wait().await {
                 Some(russh::ChannelMsg::Data { data }) => {
@@ -219,9 +211,10 @@ impl SshSession {
         &self,
         remote_path: &str,
     ) -> Result<impl AsyncRead + AsyncWrite + Unpin> {
-        let handle = self.handle.as_ref().ok_or(Error::SshConnection(
-            "Not connected".to_string(),
-        ))?;
+        let handle = self
+            .handle
+            .as_ref()
+            .ok_or(Error::SshConnection("Not connected".to_string()))?;
 
         let channel = handle
             .lock()
@@ -242,7 +235,7 @@ impl SshSession {
                 .disconnect(russh::Disconnect::ByApplication, "", "en")
                 .await;
         }
-        
+
         *self.state.lock().await = SessionState::Disconnected;
         Ok(())
     }
@@ -264,7 +257,7 @@ impl SshTunnel {
     pub async fn new(config: TunnelConfig, remote_path: String) -> Result<Self> {
         let mut session = SshSession::new(config);
         session.connect().await?;
-        
+
         Ok(Self {
             session: Arc::new(Mutex::new(session)),
             remote_path,
@@ -312,7 +305,7 @@ impl russh::client::Handler for ClientHandler {
     ) -> std::result::Result<bool, Self::Error> {
         // Store the server key
         *self.server_key.lock().await = Some(server_public_key.clone());
-        
+
         // In production, verify against known_hosts
         // For now, accept all keys (like StrictHostKeyChecking=no)
         Ok(true)
@@ -350,12 +343,12 @@ impl AsyncRead for ChannelStream {
             let to_copy = remaining.len().min(buf.remaining());
             buf.put_slice(&remaining[..to_copy]);
             self.read_pos += to_copy;
-            
+
             if self.read_pos >= self.read_buffer.len() {
                 self.read_buffer.clear();
                 self.read_pos = 0;
             }
-            
+
             return Poll::Ready(Ok(()));
         }
 
@@ -376,9 +369,9 @@ impl AsyncWrite for ChannelStream {
 
         // For simplicity, we'll use a blocking approach indicator
         // In production, this would need proper async handling
-        let data = buf.to_vec();
-        let channel = &mut self.channel;
-        
+        let _data = buf.to_vec();
+        let _channel = &mut self.channel;
+
         // We can't easily poll the future here, so we wake and return
         cx.waker().wake_by_ref();
         Poll::Ready(Ok(buf.len()))
@@ -400,12 +393,12 @@ impl AsyncWrite for ChannelStream {
 }
 
 /// Expand ~ to home directory
-fn expand_tilde(path: &PathBuf) -> PathBuf {
+fn expand_tilde(path: &Path) -> PathBuf {
     let path_str = path.to_string_lossy();
-    if path_str.starts_with("~/") {
+    if let Some(stripped) = path_str.strip_prefix("~/") {
         if let Some(home) = dirs::home_dir() {
-            return home.join(&path_str[2..]);
+            return home.join(stripped);
         }
     }
-    path.clone()
+    path.to_path_buf()
 }

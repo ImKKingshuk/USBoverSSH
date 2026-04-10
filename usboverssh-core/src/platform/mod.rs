@@ -23,17 +23,17 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
     {
         linux::enumerate_devices()
     }
-    
+
     #[cfg(target_os = "macos")]
     {
         macos::enumerate_devices()
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         windows_impl::enumerate_devices()
     }
-    
+
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         Err(crate::error::Error::PlatformNotSupported(
@@ -48,7 +48,7 @@ pub fn check_usbip_available() -> Result<bool> {
     {
         linux::check_usbip_available()
     }
-    
+
     #[cfg(not(target_os = "linux"))]
     {
         // USB/IP client functionality works via userspace on non-Linux
@@ -62,7 +62,7 @@ pub fn load_kernel_modules(server_mode: bool) -> Result<()> {
     {
         linux::load_kernel_modules(server_mode)
     }
-    
+
     #[cfg(not(target_os = "linux"))]
     {
         let _ = server_mode;
@@ -73,14 +73,22 @@ pub fn load_kernel_modules(server_mode: bool) -> Result<()> {
 /// Get the platform name
 pub fn platform_name() -> &'static str {
     #[cfg(target_os = "linux")]
-    { "Linux" }
-    
+    {
+        "Linux"
+    }
+
     #[cfg(target_os = "macos")]
-    { "macOS" }
-    
+    {
+        "macOS"
+    }
+
     #[cfg(target_os = "windows")]
-    { "Windows" }
-    
+    {
+        "Windows"
+    }
+
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-    { "Unknown" }
+    {
+        "Unknown"
+    }
 }

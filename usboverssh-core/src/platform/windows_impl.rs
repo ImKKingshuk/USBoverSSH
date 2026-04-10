@@ -9,10 +9,10 @@ use crate::error::{Error, Result};
 /// Enumerate USB devices on Windows using nusb
 pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
     let mut devices = Vec::new();
-    
-    for device in nusb::list_devices().map_err(|e| {
-        Error::UsbEnumeration(format!("Failed to enumerate USB devices: {}", e))
-    })? {
+
+    for device in nusb::list_devices()
+        .map_err(|e| Error::UsbEnumeration(format!("Failed to enumerate USB devices: {}", e)))?
+    {
         let device_info = DeviceInfo {
             bus_id: format!("{:03}-{:03}", device.bus_number(), device.device_address()),
             vendor_id: device.vendor_id(),
@@ -28,15 +28,13 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
             is_attached: false,
             is_bound: false,
         };
-        
+
         devices.push(device_info);
     }
-    
+
     // Sort by bus number, then device number
-    devices.sort_by(|a, b| {
-        a.bus_num.cmp(&b.bus_num).then(a.dev_num.cmp(&b.dev_num))
-    });
-    
+    devices.sort_by(|a, b| a.bus_num.cmp(&b.bus_num).then(a.dev_num.cmp(&b.dev_num)));
+
     Ok(devices)
 }
 
@@ -51,4 +49,3 @@ fn parse_speed(device: &nusb::DeviceInfo) -> DeviceSpeed {
         _ => DeviceSpeed::Unknown,
     }
 }
-

@@ -17,7 +17,10 @@ pub enum Error {
     DeviceNotFound(String),
 
     #[error("Multiple devices match pattern '{pattern}': {matches:?}")]
-    MultipleDevicesMatch { pattern: String, matches: Vec<String> },
+    MultipleDevicesMatch {
+        pattern: String,
+        matches: Vec<String>,
+    },
 
     #[error("No USB devices available")]
     NoDevicesAvailable,
@@ -148,7 +151,9 @@ impl Error {
             Self::KernelModuleNotLoaded { suggestion, .. } => Some(suggestion),
             Self::PermissionDenied(_) => Some("Try running with sudo or as root"),
             Self::SshKeyNotFound(_) => Some("Generate a key with: ssh-keygen -t ed25519"),
-            Self::SshAuthentication { .. } => Some("Check your SSH key is added to the remote host's authorized_keys"),
+            Self::SshAuthentication { .. } => {
+                Some("Check your SSH key is added to the remote host's authorized_keys")
+            }
             _ => None,
         }
     }

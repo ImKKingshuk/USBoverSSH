@@ -2,10 +2,9 @@
 //!
 //! Implements the USB/IP protocol for sharing USB devices over network.
 
-use crate::device::{DeviceInfo, DeviceSpeed};
+use crate::device::DeviceInfo;
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// USB/IP protocol version
@@ -29,7 +28,7 @@ pub enum OpCode {
     RetSubmit,
     /// Unlink URB
     CmdUnlink,
-    /// Unlink reply 
+    /// Unlink reply
     RetUnlink,
 }
 
@@ -60,7 +59,6 @@ impl OpCode {
         }
     }
 }
-
 
 /// USB/IP device status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,17 +120,19 @@ impl UsbIpHeader {
     /// Read from async stream
     pub async fn read_from<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Self> {
         let mut buf = [0u8; 8];
-        reader.read_exact(&mut buf).await.map_err(|e| {
-            Error::UsbIpProtocol(format!("Failed to read header: {}", e))
-        })?;
+        reader
+            .read_exact(&mut buf)
+            .await
+            .map_err(|e| Error::UsbIpProtocol(format!("Failed to read header: {}", e)))?;
         Ok(Self::from_bytes(&buf))
     }
 
     /// Write to async stream
     pub async fn write_to<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<()> {
-        writer.write_all(&self.to_bytes()).await.map_err(|e| {
-            Error::UsbIpProtocol(format!("Failed to write header: {}", e))
-        })?;
+        writer
+            .write_all(&self.to_bytes())
+            .await
+            .map_err(|e| Error::UsbIpProtocol(format!("Failed to write header: {}", e)))?;
         Ok(())
     }
 }
@@ -194,33 +194,33 @@ impl UsbIpDeviceDescriptor {
     /// Serialize to bytes (312 bytes fixed size)
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![0u8; 312];
-        
+
         // Path (256 bytes, null-terminated)
         let path_bytes = self.path.as_bytes();
         let path_len = path_bytes.len().min(255);
         buf[0..path_len].copy_from_slice(&path_bytes[..path_len]);
-        
+
         // Bus ID (32 bytes, null-terminated)
         let bus_id_bytes = self.bus_id.as_bytes();
         let bus_id_len = bus_id_bytes.len().min(31);
         buf[256..256 + bus_id_len].copy_from_slice(&bus_id_bytes[..bus_id_len]);
-        
+
         // Numeric fields (network byte order)
         buf[288..292].copy_from_slice(&self.bus_num.to_be_bytes());
         buf[292..296].copy_from_slice(&self.dev_num.to_be_bytes());
         buf[296..300].copy_from_slice(&self.speed.to_be_bytes());
-        
+
         buf[300..302].copy_from_slice(&self.vendor_id.to_be_bytes());
         buf[302..304].copy_from_slice(&self.product_id.to_be_bytes());
         buf[304..306].copy_from_slice(&self.device_revision.to_be_bytes());
-        
+
         buf[306] = self.device_class;
         buf[307] = self.device_subclass;
         buf[308] = self.device_protocol;
         buf[309] = self.configuration_value;
         buf[310] = self.num_configurations;
         buf[311] = self.num_interfaces;
-        
+
         buf
     }
 
@@ -229,11 +229,11 @@ impl UsbIpDeviceDescriptor {
         if buf.len() < 312 {
             return Err(Error::UsbIpProtocol("Device descriptor too short".into()));
         }
-        
+
         // Read path (null-terminated)
         let path = read_cstring(&buf[0..256]);
         let bus_id = read_cstring(&buf[256..288]);
-        
+
         Ok(Self {
             path,
             bus_id,
@@ -314,18 +314,18 @@ impl UsbIpProtocol {
     /// Create import (attach) request
     pub fn create_import_request(bus_id: &str) -> Vec<u8> {
         let mut buf = Vec::with_capacity(40);
-        
+
         // Header
         let header = UsbIpHeader::request(OpCode::ReqImport);
         buf.extend_from_slice(&header.to_bytes());
-        
+
         // Bus ID (32 bytes, null-terminated)
         let mut bus_id_buf = [0u8; 32];
         let bus_id_bytes = bus_id.as_bytes();
         let len = bus_id_bytes.len().min(31);
         bus_id_buf[..len].copy_from_slice(&bus_id_bytes[..len]);
         buf.extend_from_slice(&bus_id_buf);
-        
+
         buf
     }
 
@@ -337,59 +337,61 @@ impl UsbIpProtocol {
 
     /// Parse import reply
     pub async fn parse_import_reply<R: AsyncRead + Unpin>(
-        reader: &mut R
+        reader: &mut R,
     ) -> Result<UsbIpDeviceDescriptor> {
         // Read header
         let header = UsbIpHeader::read_from(reader).await?;
-        
+
         if header.status != 0 {
             return Err(Error::UsbIpAttach(format!(
                 "Import failed with status: {}",
                 header.status
             )));
         }
-        
+
         // Read device descriptor
         let mut buf = [0u8; 312];
         reader.read_exact(&mut buf).await.map_err(|e| {
             Error::UsbIpProtocol(format!("Failed to read device descriptor: {}", e))
         })?;
-        
+
         UsbIpDeviceDescriptor::from_bytes(&buf)
     }
 
     /// Parse device list reply
     pub async fn parse_devlist_reply<R: AsyncRead + Unpin>(
-        reader: &mut R
+        reader: &mut R,
     ) -> Result<Vec<UsbIpDeviceDescriptor>> {
         // Read header
         let header = UsbIpHeader::read_from(reader).await?;
-        
+
         if header.status != 0 {
             return Err(Error::UsbIpProtocol(format!(
                 "Device list failed with status: {}",
                 header.status
             )));
         }
-        
+
         // Read device count
         let mut count_buf = [0u8; 4];
-        reader.read_exact(&mut count_buf).await.map_err(|e| {
-            Error::UsbIpProtocol(format!("Failed to read device count: {}", e))
-        })?;
+        reader
+            .read_exact(&mut count_buf)
+            .await
+            .map_err(|e| Error::UsbIpProtocol(format!("Failed to read device count: {}", e)))?;
         let count = u32::from_be_bytes(count_buf);
-        
+
         let mut devices = Vec::with_capacity(count as usize);
-        
+
         for _ in 0..count {
             // Read device descriptor
             let mut buf = [0u8; 312];
-            reader.read_exact(&mut buf).await.map_err(|e| {
-                Error::UsbIpProtocol(format!("Failed to read device: {}", e))
-            })?;
-            
+            reader
+                .read_exact(&mut buf)
+                .await
+                .map_err(|e| Error::UsbIpProtocol(format!("Failed to read device: {}", e)))?;
+
             let device = UsbIpDeviceDescriptor::from_bytes(&buf)?;
-            
+
             // Read interface descriptors
             for _ in 0..device.num_interfaces {
                 let mut iface_buf = [0u8; 4];
@@ -397,10 +399,10 @@ impl UsbIpProtocol {
                     Error::UsbIpProtocol(format!("Failed to read interface: {}", e))
                 })?;
             }
-            
+
             devices.push(device);
         }
-        
+
         Ok(devices)
     }
 }

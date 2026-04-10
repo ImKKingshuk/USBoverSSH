@@ -3,7 +3,7 @@
 use crate::OutputFormat;
 use anyhow::Result;
 use colored::Colorize;
-use usboverssh_core::{Config, DeviceFilter, DeviceManager};
+use usboverssh_core::{Config, DeviceManager};
 
 /// Run the list command
 pub async fn run(
@@ -23,11 +23,7 @@ pub async fn run(
 }
 
 /// List local USB devices
-async fn list_local(
-    all: bool,
-    class_filter: Option<String>,
-    format: OutputFormat,
-) -> Result<()> {
+async fn list_local(all: bool, class_filter: Option<String>, format: OutputFormat) -> Result<()> {
     let mut manager = DeviceManager::new()?;
     let devices = manager.list_devices()?;
 
@@ -48,7 +44,10 @@ async fn list_local(
         .iter()
         .filter(|d| {
             if let Some(ref class) = class_filter {
-                d.device_class.short_name().to_lowercase().contains(&class.to_lowercase())
+                d.device_class
+                    .short_name()
+                    .to_lowercase()
+                    .contains(&class.to_lowercase())
             } else {
                 true
             }
@@ -81,7 +80,8 @@ async fn list_local(
                     "○".dimmed()
                 };
 
-                let class_badge = format!("[{}]", device.device_class.short_name()).bright_magenta();
+                let class_badge =
+                    format!("[{}]", device.device_class.short_name()).bright_magenta();
 
                 print!(
                     "  {} {:<10} {:04x}:{:04x}   {:<10} ",
@@ -139,8 +139,8 @@ async fn list_local(
 /// List remote USB devices via SSH
 async fn list_remote(
     host_spec: &str,
-    all: bool,
-    class_filter: Option<String>,
+    _all: bool,
+    _class_filter: Option<String>,
     config: &Config,
     format: OutputFormat,
 ) -> Result<()> {
@@ -213,7 +213,10 @@ async fn list_remote(
                 println!("{}", output);
             }
             OutputFormat::Json => {
-                println!("{{\"error\": \"Could not parse device list\", \"raw\": {:?}}}", output);
+                println!(
+                    "{{\"error\": \"Could not parse device list\", \"raw\": {:?}}}",
+                    output
+                );
             }
         }
     }

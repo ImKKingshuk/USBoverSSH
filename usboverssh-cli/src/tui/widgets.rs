@@ -3,9 +3,7 @@
 use super::app::{App, Pane, Popup};
 use ratatui::{
     prelude::*,
-    widgets::{
-        Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, Tabs, Wrap,
-    },
+    widgets::{Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, Tabs, Wrap},
 };
 
 /// Main render function
@@ -13,9 +11,9 @@ pub fn render(frame: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(10),    // Main content
-            Constraint::Length(3),  // Status bar
+            Constraint::Length(3), // Header
+            Constraint::Min(10),   // Main content
+            Constraint::Length(3), // Status bar
         ])
         .split(frame.area());
 
@@ -141,13 +139,15 @@ fn render_local_devices(frame: &mut Frame, app: &App, area: Rect) {
 /// Render remote devices
 fn render_remote_devices(frame: &mut Frame, app: &App, area: Rect) {
     let total: usize = app.remote_devices.values().map(|v| v.len()).sum();
-    
+
     let items: Vec<ListItem> = if app.hosts.iter().any(|h| h.connected) {
         app.remote_devices
             .iter()
             .flat_map(|(host, devices)| {
-                std::iter::once(ListItem::new(format!("── {} ──", host))
-                    .style(Style::default().fg(Color::Cyan).bold()))
+                std::iter::once(
+                    ListItem::new(format!("── {} ──", host))
+                        .style(Style::default().fg(Color::Cyan).bold()),
+                )
                 .chain(devices.iter().map(|d| {
                     ListItem::new(format!(
                         "  {} {} {}",
@@ -162,21 +162,24 @@ fn render_remote_devices(frame: &mut Frame, app: &App, area: Rect) {
         vec![ListItem::new("  No hosts connected").style(Style::default().fg(Color::DarkGray))]
     };
 
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Blue))
-                .title(format!(" Remote Devices ({}) ", total))
-                .title_style(Style::default().bold()),
-        );
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Blue))
+            .title(format!(" Remote Devices ({}) ", total))
+            .title_style(Style::default().bold()),
+    );
 
     frame.render_widget(list, area);
 }
 
 /// Render attached devices
 fn render_attached_devices(frame: &mut Frame, app: &App, area: Rect) {
-    let selected = app.selected.get(&Pane::AttachedDevices).copied().unwrap_or(0);
+    let selected = app
+        .selected
+        .get(&Pane::AttachedDevices)
+        .copied()
+        .unwrap_or(0);
 
     let header = Row::new(vec![
         Cell::from("Port").style(Style::default().fg(Color::Cyan).bold()),
@@ -230,7 +233,10 @@ fn render_attached_devices(frame: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))
-            .title(format!(" Attached Devices ({}) ", app.attached_devices.len()))
+            .title(format!(
+                " Attached Devices ({}) ",
+                app.attached_devices.len()
+            ))
             .title_style(Style::default().bold()),
     );
 
@@ -263,7 +269,10 @@ fn render_hosts(frame: &mut Frame, app: &App, area: Rect) {
                 Span::styled(format!(" {} ", status), Style::default().fg(status_color)),
                 Span::styled(&host.name, Style::default().bold()),
                 Span::raw(" "),
-                Span::styled(format!("({})", host.hostname), Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    format!("({})", host.hostname),
+                    Style::default().fg(Color::DarkGray),
+                ),
             ]))
             .style(style)
         })
@@ -373,14 +382,16 @@ fn render_connect_popup(frame: &mut Frame) {
     let area = centered_rect(50, 30, frame.area());
     frame.render_widget(Clear, area);
 
-    let paragraph = Paragraph::new("\n  Enter host: user@hostname[:port]\n\n  Press Enter to connect, Esc to cancel")
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Green))
-                .title(" Connect to Host ")
-                .title_style(Style::default().bold().fg(Color::Green)),
-        );
+    let paragraph = Paragraph::new(
+        "\n  Enter host: user@hostname[:port]\n\n  Press Enter to connect, Esc to cancel",
+    )
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Green))
+            .title(" Connect to Host ")
+            .title_style(Style::default().bold().fg(Color::Green)),
+    );
 
     frame.render_widget(paragraph, area);
 }

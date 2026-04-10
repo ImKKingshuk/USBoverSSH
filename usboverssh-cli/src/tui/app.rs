@@ -15,6 +15,7 @@ pub enum Pane {
 
 /// Popup dialog type
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Popup {
     None,
     Help,
@@ -29,13 +30,17 @@ pub struct HostStatus {
     pub name: String,
     pub hostname: String,
     pub connected: bool,
+    #[allow(dead_code)]
     pub devices: Vec<DeviceInfo>,
+    #[allow(dead_code)]
     pub last_error: Option<String>,
 }
 
 /// Main application state
+#[derive(Debug, Clone)]
 pub struct App {
     /// Configuration
+    #[allow(dead_code)]
     pub config: Config,
     /// Current active pane
     pub active_pane: Pane,
@@ -74,7 +79,7 @@ impl App {
     /// Create new app state
     pub fn new(config: Config) -> Self {
         let refresh_interval = Duration::from_millis(config.tui.refresh_interval);
-        
+
         let mut selected = HashMap::new();
         selected.insert(Pane::LocalDevices, 0);
         selected.insert(Pane::RemoteDevices, 0);
@@ -165,7 +170,7 @@ impl App {
         if count == 0 {
             return;
         }
-        
+
         let current = self.selected.get(&self.active_pane).copied().unwrap_or(0);
         let new = if current == 0 { count - 1 } else { current - 1 };
         self.selected.insert(self.active_pane, new);
@@ -177,7 +182,7 @@ impl App {
         if count == 0 {
             return;
         }
-        
+
         let current = self.selected.get(&self.active_pane).copied().unwrap_or(0);
         let new = (current + 1) % count;
         self.selected.insert(self.active_pane, new);
@@ -215,7 +220,7 @@ impl App {
     /// Refresh local devices
     pub async fn refresh_devices(&mut self) {
         self.set_status("Refreshing devices...".to_string());
-        
+
         // Refresh local devices
         if let Ok(mut manager) = DeviceManager::new() {
             if let Ok(devices) = manager.list_devices() {
@@ -233,7 +238,7 @@ impl App {
     /// Refresh attached devices
     fn refresh_attached(&mut self) {
         self.attached_devices.clear();
-        
+
         #[cfg(target_os = "linux")]
         {
             use std::fs;
@@ -286,7 +291,11 @@ impl App {
 
     /// Detach selected device
     pub async fn detach_selected(&mut self) {
-        let idx = self.selected.get(&Pane::AttachedDevices).copied().unwrap_or(0);
+        let idx = self
+            .selected
+            .get(&Pane::AttachedDevices)
+            .copied()
+            .unwrap_or(0);
         if idx >= self.attached_devices.len() {
             return;
         }
@@ -300,7 +309,7 @@ impl App {
             use std::path::Path;
 
             let vhci_base = Path::new("/sys/bus/usb/devices/platform");
-            
+
             for entry in fs::read_dir(vhci_base).into_iter().flatten().flatten() {
                 let detach_path = entry.path().join("detach");
                 if detach_path.exists() {

@@ -33,11 +33,14 @@ fn show_path(quiet: bool) -> Result<()> {
                 "Configuration file:".bright_cyan(),
                 path.display().to_string().bright_white()
             );
-            
+
             if path.exists() {
                 println!("  {} File exists", "✓".bright_green());
             } else {
-                println!("  {} File does not exist (using defaults)", "ℹ".bright_blue());
+                println!(
+                    "  {} File does not exist (using defaults)",
+                    "ℹ".bright_blue()
+                );
                 println!(
                     "  {} Run '{}' to create one",
                     "→".dimmed(),
@@ -47,10 +50,7 @@ fn show_path(quiet: bool) -> Result<()> {
         }
     } else {
         if !quiet {
-            println!(
-                "{} Could not determine configuration path",
-                "⚠".yellow()
-            );
+            println!("{} Could not determine configuration path", "⚠".yellow());
         }
     }
     Ok(())
@@ -58,9 +58,8 @@ fn show_path(quiet: bool) -> Result<()> {
 
 /// Initialize configuration file
 fn init_config(force: bool, quiet: bool) -> Result<()> {
-    let path = Config::default_path().ok_or_else(|| {
-        anyhow::anyhow!("Could not determine configuration path")
-    })?;
+    let path = Config::default_path()
+        .ok_or_else(|| anyhow::anyhow!("Could not determine configuration path"))?;
 
     if path.exists() && !force {
         if !quiet {
@@ -114,9 +113,17 @@ fn add_host(name: String, spec: String, config: &Config, quiet: bool) -> Result<
             "✓".bright_green(),
             name.bright_yellow()
         );
-        println!("  {} {}", "Hostname:".dimmed(), host_config.hostname.bright_white());
+        println!(
+            "  {} {}",
+            "Hostname:".dimmed(),
+            host_config.hostname.bright_white()
+        );
         println!("  {} {}", "User:".dimmed(), host_config.user.bright_white());
-        println!("  {} {}", "Port:".dimmed(), host_config.port.to_string().bright_white());
+        println!(
+            "  {} {}",
+            "Port:".dimmed(),
+            host_config.port.to_string().bright_white()
+        );
         println!();
         println!(
             "  You can now use '{}' instead of '{}'",

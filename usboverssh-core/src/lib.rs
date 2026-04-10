@@ -37,7 +37,7 @@ pub mod server;
 pub mod tunnel;
 
 pub use config::Config;
-pub use device::{DeviceFilter, DeviceInfo, DeviceManager, DeviceSpeed, glob_match};
+pub use device::{glob_match, DeviceFilter, DeviceInfo, DeviceManager, DeviceSpeed};
 pub use error::{Error, Result};
 pub use protocol::UsbIpProtocol;
 pub use server::Server;

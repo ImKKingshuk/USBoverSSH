@@ -188,7 +188,7 @@ pub enum ConfigAction {
 /// Get custom clap styles
 fn get_styles() -> clap::builder::Styles {
     use clap::builder::styling::{AnsiColor, Color, Style};
-    
+
     clap::builder::Styles::styled()
         .usage(
             Style::new()
@@ -200,14 +200,8 @@ fn get_styles() -> clap::builder::Styles {
                 .bold()
                 .fg_color(Some(Color::Ansi(AnsiColor::Cyan))),
         )
-        .literal(
-            Style::new()
-                .fg_color(Some(Color::Ansi(AnsiColor::Green))),
-        )
-        .placeholder(
-            Style::new()
-                .fg_color(Some(Color::Ansi(AnsiColor::Yellow))),
-        )
+        .literal(Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green))))
+        .placeholder(Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))))
 }
 
 /// Print the fancy banner
@@ -239,8 +233,8 @@ fn init_logging(verbose: u8, quiet: bool) {
         }
     };
 
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(level.to_string()));
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level.to_string()));
 
     tracing_subscriber::registry()
         .with(fmt::layer().with_target(verbose > 1))
@@ -305,9 +299,7 @@ async fn main() -> Result<()> {
             commands::serve::run(address, port, all, devices, &config).await
         }
 
-        Some(Commands::Tui { connect }) => {
-            tui::run(connect, config).await
-        }
+        Some(Commands::Tui { connect }) => tui::run(connect, config).await,
 
         Some(Commands::Config { action }) => {
             commands::config::run(action, &config, cli.quiet).await
@@ -322,7 +314,10 @@ async fn main() -> Result<()> {
         None => {
             // No command - run TUI by default
             print_banner();
-            println!("{}", "Run 'usboverssh --help' for usage information.\n".dimmed());
+            println!(
+                "{}",
+                "Run 'usboverssh --help' for usage information.\n".dimmed()
+            );
             tui::run(false, config).await
         }
     }
