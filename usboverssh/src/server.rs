@@ -28,6 +28,10 @@ pub struct ServerConfig {
     pub device_filters: Vec<DeviceFilter>,
     /// Allow all devices
     pub export_all: bool,
+    /// Max concurrent connections
+    pub max_connections: usize,
+    /// Rate limiter for connections
+    pub rate_limiter: Option<Arc<RateLimiter>>,
 }
 
 impl Default for ServerConfig {
@@ -38,6 +42,8 @@ impl Default for ServerConfig {
             unix_socket: None,
             device_filters: Vec::new(),
             export_all: false,
+            max_connections: 100,
+            rate_limiter: None,
         }
     }
 }
@@ -47,6 +53,7 @@ pub struct Server {
     config: ServerConfig,
     device_manager: Arc<Mutex<DeviceManager>>,
     shutdown_tx: broadcast::Sender<()>,
+    active_connections: Arc<Mutex<std::collections::HashSet<String>>>,
 }
 
 impl Server {
@@ -58,6 +65,7 @@ impl Server {
             config,
             device_manager: Arc::new(Mutex::new(DeviceManager::new()?)),
             shutdown_tx,
+            active_connections: Arc::new(Mutex::new(std::collections::HashSet::new())),
         })
     }
 
@@ -113,11 +121,48 @@ impl Server {
                         result = listener.accept() => {
                             match result {
                                 Ok((stream, addr)) => {
+                                    let client_id = addr.to_string();
+
+                                    // Check connection limit
+                                    let conn_count = {
+                                        let conns = active_connections.lock().await;
+                                        conns.len()
+                                    };
+
+                                    if conn_count >= config.max_connections {
+                                        warn!("Connection rejected: max connections reached ({})", config.max_connections);
+                                        let _ = stream.shutdown(std::net::Shutdown::Both);
+                                        continue;
+                                    }
+
+                                    // Check rate limit
+                                    if let Some(ref limiter) = config.rate_limiter {
+                                        if !limiter.check(&client_id).await {
+                                            warn!("Connection rejected: rate limited for {}", client_id);
+                                            let _ = stream.shutdown(std::net::Shutdown::Both);
+                                            continue;
+                                        }
+                                    }
+
                                     info!("New TCP connection from {}", addr);
+
+                                    // Track connection
+                                    {
+                                        let mut conns = active_connections.lock().await;
+                                        conns.insert(client_id.clone());
+                                    }
+
                                     let dm = Arc::clone(&device_manager);
                                     let cfg = config.clone();
+                                    let active_conns = Arc::clone(&active_connections);
+
                                     tokio::spawn(async move {
-                                        if let Err(e) = handle_tcp_client(stream, dm, cfg).await {
+                                        let result = handle_tcp_client(stream, dm, cfg).await;
+                                        {
+                                            let mut conns = active_conns.lock().await;
+                                            conns.remove(&client_id);
+                                        }
+                                        if let Err(e) = result {
                                             error!("Client error: {}", e);
                                         }
                                     });

@@ -30,6 +30,8 @@ pub async fn run(
         unix_socket: None,
         device_filters: filters.clone(),
         export_all,
+        max_connections: 100,
+        rate_limiter: None,
     };
 
     // Create and start server
