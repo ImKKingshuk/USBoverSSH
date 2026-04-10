@@ -1,6 +1,6 @@
 //! Retry Logic with Exponential Backoff
 //!
-//! Provides configurable retry mechanisms with exponential backoff and jitter.
+//! Provides configurable retry mechanisms with exponential backoff.
 
 use crate::error::{Error, Result};
 use std::future::Future;
@@ -18,8 +18,6 @@ pub struct RetryConfig {
     pub max_delay: Duration,
     /// Multiplier for exponential backoff
     pub multiplier: f64,
-    /// Add jitter to prevent thundering herd
-    pub jitter: bool,
 }
 
 impl Default for RetryConfig {
@@ -29,7 +27,6 @@ impl Default for RetryConfig {
             initial_delay: Duration::from_millis(100),
             max_delay: Duration::from_secs(30),
             multiplier: 2.0,
-            jitter: true,
         }
     }
 }
@@ -41,14 +38,12 @@ impl RetryConfig {
         initial_delay: Duration,
         max_delay: Duration,
         multiplier: f64,
-        jitter: bool,
     ) -> Self {
         Self {
             max_attempts,
             initial_delay,
             max_delay,
             multiplier,
-            jitter,
         }
     }
 
@@ -59,7 +54,6 @@ impl RetryConfig {
             initial_delay: Duration::from_secs(1),
             max_delay: Duration::from_secs(30),
             multiplier: 2.0,
-            jitter: true,
         }
     }
 
@@ -70,7 +64,6 @@ impl RetryConfig {
             initial_delay: Duration::from_millis(500),
             max_delay: Duration::from_secs(10),
             multiplier: 1.5,
-            jitter: true,
         }
     }
 
@@ -79,30 +72,18 @@ impl RetryConfig {
         let delay_ms = self.initial_delay.as_millis() as f64
             * self.multiplier.powi(attempt as i32 - 1);
 
-        let delay = Duration::from_millis(delay_ms as u64).min(self.max_delay);
-
-        if self.jitter {
-            // Add random jitter up to 25% of the delay
-            let jitter_ms = (delay.as_millis() as f64 * 0.25) as u64;
-            let random_jitter = fastrand::u64(0..=jitter_ms);
-            let jitter_sign = if fastrand::bool() { 1 } else { -1 };
-            let jittered_ms = delay.as_millis() as i64 + (random_jitter as i64 * jitter_sign);
-            Duration::from_millis(jittered_ms.max(0) as u64)
-        } else {
-            delay
-        }
+        Duration::from_millis(delay_ms as u64).min(self.max_delay)
     }
 }
 
 /// Retry an async operation with exponential backoff
-pub async fn retry_with_backoff<F, Fut, T, E>(
+pub async fn retry_with_backoff<F, Fut, T>(
     config: RetryConfig,
     operation: F,
 ) -> Result<T>
 where
     F: Fn() -> Fut,
-    Fut: Future<Output = Result<T, E>>,
-    E: std::error::Error + Send + Sync + 'static,
+    Fut: Future<Output = Result<T>>,
 {
     let mut last_error = None;
 
@@ -110,54 +91,7 @@ where
         match operation().await {
             Ok(result) => return Ok(result),
             Err(e) => {
-                last_error = Some(Error::Other(e.to_string()));
-
-                if attempt < config.max_attempts {
-                    let delay = config.calculate_delay(attempt);
-                    tracing::warn!(
-                        "Attempt {}/{} failed, retrying after {:?}",
-                        attempt,
-                        config.max_attempts,
-                        delay
-                    );
-                    sleep(delay).await;
-                }
-            }
-        }
-    }
-
-    Err(last_error.unwrap_or_else(|| {
-        Error::Other(format!(
-            "Operation failed after {} attempts",
-            config.max_attempts
-        ))
-    }))
-}
-
-/// Retry an async operation with a custom error handler
-pub async fn retry_with_backoff_handler<F, Fut, T, E, H>(
-    config: RetryConfig,
-    operation: F,
-    handler: H,
-) -> Result<T>
-where
-    F: Fn() -> Fut,
-    Fut: Future<Output = Result<T, E>>,
-    E: std::error::Error + Send + Sync + 'static,
-    H: Fn(&E, u32) -> bool,
-{
-    let mut last_error = None;
-
-    for attempt in 1..=config.max_attempts {
-        match operation().await {
-            Ok(result) => return Ok(result),
-            Err(e) => {
-                last_error = Some(Error::Other(e.to_string()));
-
-                // Check if handler says we should continue retrying
-                if !handler(&e, attempt) {
-                    break;
-                }
+                last_error = Some(e);
 
                 if attempt < config.max_attempts {
                     let delay = config.calculate_delay(attempt);
@@ -192,7 +126,6 @@ mod tests {
         assert_eq!(config.initial_delay, Duration::from_millis(100));
         assert_eq!(config.max_delay, Duration::from_secs(30));
         assert_eq!(config.multiplier, 2.0);
-        assert!(config.jitter);
     }
 
     #[test]
@@ -218,7 +151,6 @@ mod tests {
             initial_delay: Duration::from_millis(100),
             max_delay: Duration::from_secs(30),
             multiplier: 2.0,
-            jitter: false,
         };
 
         // Attempt 1: initial delay
@@ -241,7 +173,6 @@ mod tests {
             initial_delay: Duration::from_millis(100),
             max_delay: Duration::from_millis(300),
             multiplier: 10.0,
-            jitter: false,
         };
 
         // Should cap at max_delay
@@ -256,7 +187,7 @@ mod tests {
 
         let result = retry_with_backoff(config, || {
             attempt_count += 1;
-            async { Ok::<_, std::io::Error>(42) }
+            async { Ok::<_, Error>(42) }
         })
         .await;
 
@@ -271,7 +202,6 @@ mod tests {
             initial_delay: Duration::from_millis(10),
             max_delay: Duration::from_millis(100),
             multiplier: 1.0,
-            jitter: false,
         };
         let mut attempt_count = 0;
 
@@ -279,12 +209,9 @@ mod tests {
             attempt_count += 1;
             async {
                 if attempt_count < 2 {
-                    Err(std::io::Error::new(
-                        std::io::ErrorKind::ConnectionRefused,
-                        "connection refused",
-                    ))
+                    Err(Error::Other("connection refused".to_string()))
                 } else {
-                    Ok::<_, std::io::Error>(42)
+                    Ok::<_, Error>(42)
                 }
             }
         })
@@ -301,18 +228,12 @@ mod tests {
             initial_delay: Duration::from_millis(10),
             max_delay: Duration::from_millis(100),
             multiplier: 1.0,
-            jitter: false,
         };
         let mut attempt_count = 0;
 
         let result = retry_with_backoff(config, || {
             attempt_count += 1;
-            async {
-                Err::<(), std::io::Error>(std::io::Error::new(
-                    std::io::ErrorKind::ConnectionRefused,
-                    "connection refused",
-                ))
-            }
+            async { Err::<(), Error>(Error::Other("connection refused".to_string())) }
         })
         .await;
 
