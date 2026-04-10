@@ -19,7 +19,8 @@ fn test_config_validation() {
 fn test_config_default_path() {
     let path = Config::default_path();
     assert!(path.is_some());
-    let path_str = path.unwrap().to_string_lossy();
+    let binding = path.unwrap();
+    let path_str = binding.to_string_lossy();
     assert!(path_str.contains("usboverssh"));
     assert!(path_str.contains("config.toml"));
 }

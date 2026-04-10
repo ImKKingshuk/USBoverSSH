@@ -1,20 +1,24 @@
 // Integration tests for SSH tunneling
 
-use usboverssh::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+use usboverssh::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState};
 use usboverssh::connection_pool::{ConnectionPool, ConnectionPoolConfig};
 use usboverssh::retry::{RetryConfig, retry_with_backoff};
 use usboverssh::error::Error;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 #[tokio::test]
 async fn test_retry_with_backoff_success() {
     let config = RetryConfig::default();
-    let mut attempts = 0;
+    let attempts = Arc::new(Mutex::new(0));
 
     let result = retry_with_backoff(config, || {
-        attempts += 1;
+        let count = Arc::clone(&attempts);
         async move {
-            if attempts < 2 {
+            let current = *count.lock().await;
+            *count.lock().await += 1;
+            if current < 2 {
                 Err(Error::Other("connection failed".to_string()))
             } else {
                 Ok::<_, Error>(42)
@@ -25,7 +29,7 @@ async fn test_retry_with_backoff_success() {
 
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 42);
-    assert_eq!(attempts, 2);
+    assert_eq!(*attempts.lock().await, 2);
 }
 
 #[tokio::test]
