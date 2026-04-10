@@ -2,8 +2,28 @@ name: pre-release checks
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main, develop]
+  pull_request:
 
 jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+      - name: Run cargo-deny
+        run: cargo deny check advisories bans licenses sources
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: rust
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
   test:
     name: Test
     runs-on: ubuntu-latest

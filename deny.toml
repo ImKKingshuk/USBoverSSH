@@ -10,10 +10,18 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
 # A list of advisory IDs to ignore
 ignore = []
+# The lint level for security vulnerabilities
+vulnerability = "deny"
+# The lint level for unmaintained crates
+unmaintained = "warn"
+# The lint level for crates that have been marked as unsound
+unsound = "deny"
+# The lint level for crates that have been marked as ignored
+ignore = []
 
 [bans]
 # Lint level for when multiple versions of the same crate are detected
-multiple-versions = "allow"
+multiple-versions = "warn"
 # Lint level for when a crate version requirement is `*`
 wildcards = "allow"
 # The graph highlighting used when creating dotgraphs for crates
@@ -24,6 +32,8 @@ allow-wildcard-paths = true
 allow-workspace = true
 # List of crates to explicitly deny
 deny = []
+# List of crates that are explicitly allowed
+allow = []
 
 [licenses]
 # List of explicitly allowed licenses
@@ -42,17 +52,42 @@ allow = [
     "Unicode-3.0",
     "CC0-1.0",
 ]
+# List of explicitly denied licenses
+deny = [
+    "GPL-2.0",
+    "GPL-2.0+",
+    "GPL-3.0",
+    "GPL-3.0+",
+    "AGPL-3.0",
+    "AGPL-3.0+",
+]
 # Confidence threshold for license detection
 confidence-threshold = 0.8
+# Allow OSI approved licenses
+allow-osi-fsf-free = "both"
+# Allow copyleft licenses
+allow-copyleft = "warn"
 
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
 # in the allow list is encountered
-unknown-registry = "warn"
+unknown-registry = "deny"
 # Lint level for what to happen when a crate from a git repository that is not
 # in the allow list is encountered
-unknown-git = "warn"
+unknown-git = "deny"
 # List of URLs for allowed crate registries
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 # List of URLs for allowed git repositories
 allow-git = []
+# Lint level for private registries
+private = "deny"
+
+[sparse]
+# Update interval for the advisory database
+update-interval = 86400 # 24 hours
+
+[output]
+# Output format for deny output
+format = "terminal"
+# Show which configuration was used
+show-stats = true
