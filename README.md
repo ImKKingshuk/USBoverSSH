@@ -1,188 +1,243 @@
-# USBoverSSH
-
 <div align="center">
 
-```
-╦ ╦╔═╗╔═╗┌─┐┬  ┬┌─┐┬─┐╔═╗╔═╗╦ ╦
-║ ║╚═╗╠═╣│ │└┐┌┘├┤ ├┬┘╚═╗╚═╗╠═╣
-╚═╝╚═╝╩═╩└─┘ └┘ └─┘┴└─╚═╝╚═╝╩ ╩
-```
+# USBoverSSH
 
-**🔌 The Ultimate USB over SSH Solution**
+### The Ultimate USB over SSH Solution
 
-[![Rust](https://img.shields.io/badge/Rust-1.75+-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-green?style=flat-square)](https://github.com/ImKKingshuk/USBoverSSH)
+### Unified USB Device Sharing Platform
 
-*Connect USB devices between machines securely over SSH*
+### ⚛ Rust-Powered ⚛ TUI-First ⚛
+
+#### Secure USB Tunneling, Device Management, and Cross-Platform Support in One Framework
+
+USBoverSSH is a unified USB device sharing and tunneling toolkit built entirely in Rust. It provides a comprehensive TUI workspace alongside a powerful CLI, enabling users to perform USB device enumeration, secure SSH tunneling, USB/IP protocol implementation, and device attachment from a single modular framework.
+
+The platform integrates advanced capabilities including cross-platform USB device enumeration (Linux sysfs, macOS/Windows via nusb), SSH tunneling with russh, USB/IP server implementation (Linux), device filtering by multiple criteria, persistent connections with auto-reconnect, daemon mode for background operation, and kernel module management. USBoverSSH supports modern USB ecosystems across Linux (full server + client), macOS (client only), and Windows (client only).
+
+With comprehensive device filtering (bus ID, VID:PID, serial, product name, device class), multi-host configuration management, VHCI attachment/detachment (Linux), and an interactive TUI with tabbed interface, USBoverSSH enables users to securely share and access USB devices across machines within one unified environment.
+
+Connect your devices and begin advanced USB over SSH tunneling and management.
+
+<br>
+
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-brightgreen)]()
+[![Version](https://img.shields.io/badge/Release-v1.0.0-red)]()
+[![License](https://img.shields.io/badge/License-GPLv3-blue)]()
+
+<br>
 
 </div>
 
----
+## Installation
 
-## ✨ Features
+## Quick Start
 
-- 🔐 **Secure SSH Tunneling** - All USB traffic encrypted through SSH
-- 🖥️ **Cross-Platform** - Linux, macOS, and Windows client support
-- 🎨 **Interactive TUI** - Beautiful terminal UI for device management
-- 🔌 **USB/IP Protocol** - Industry-standard USB over network
-- ⚡ **Hot-Plug Support** - Automatic device detection and reconnection
-- 📁 **Configuration Files** - TOML-based settings with named hosts
-- 🔄 **Persistent Mode** - Auto-reconnect on connection drops
-- 🌐 **Multi-Host** - Connect to multiple servers simultaneously
-
-## 🚀 Quick Start
-
-### List Local USB Devices
+### TUI (Default)
 
 ```bash
-usboverssh list
-```
-
-### List Remote USB Devices
-
-```bash
-usboverssh list [email protected]
-```
-
-### Attach a Remote Device
-
-```bash
-# By VID:PID
-usboverssh attach [email protected] 0xXXXX:0xXXXX
-
-# By product name
-usboverssh attach [email protected] "Example Device"
-
-# With persistent reconnection
-usboverssh attach [email protected] 0xXXXX:0xXXXX --persistent
-```
-
-### Detach a Device
-
-```bash
-usboverssh detach 0xXXXX:0xXXXX
-
-# Detach all
-usboverssh detach all
-```
-
-### Interactive TUI
-
-```bash
-usboverssh tui
-# or simply
 usboverssh
 ```
 
-### Run as USB/IP Server
+### CLI (Headless)
 
 ```bash
-usboverssh serve --address xxx.xxx.xxx.xxx --port xxxx
+# List local USB devices
+usboverssh list
+
+# List remote USB devices
+usboverssh list [email protected]
+
+# Attach a remote device
+usboverssh attach [email protected] 0xXXXX:0xXXXX
+
+# Show attached devices
+usboverssh status
 ```
 
-## 🎮 TUI Controls
+## Product Priority
 
-| Key | Action |
-|-----|--------|
-| `Tab` / `Shift+Tab` | Switch between panes |
-| `↑` / `k`, `↓` / `j` | Navigate items |
-| `Enter` | Activate selected item |
-| `a` | Attach selected device |
-| `d` | Detach selected device |
-| `r` / `F5` | Refresh device list |
-| `c` | Connect to new host |
-| `h` | Show hosts panel |
-| `?` / `F1` | Toggle help |
-| `q` / `Esc` | Quit / Close popup |
+- **TUI is the main product and default experience.** Use `usboverssh` for day-to-day device management, host connections, and operator-guided operations.
+- **CLI is the secondary surface.** Use `usboverssh list`, `attach`, `detach`, and other commands for quick one-off tasks, scripting, and automation.
 
-## ⚙️ Configuration
+### TUI Keybindings
 
-Configuration file location:
+| Action | Keys |
+|--------|------|
+| Quit | q or Esc |
+| Navigate panes | Tab / Shift+Tab |
+| Navigate items | Arrow keys or j/k |
+| Select/Activate | Enter |
+| Attach device | a |
+| Detach device | d |
+| Refresh devices | r or F5 |
+| Connect to host | c |
+| Show hosts panel | h |
+| Toggle status panel | s |
+| Help | ? or F1 |
 
-- **Linux/macOS**: `~/.config/usboverssh/config.toml`
-- **Windows**: `%APPDATA%\usboverssh\config.toml`
+## Current Capabilities (v1.0.0)
 
-Generate a default config:
+### Core Platform
 
-```bash
-usboverssh config init
-```
+- ✅ Rust CLI with subcommands: list, attach, detach, status, serve, tui, config, completions
+- 🔧 Full-screen TUI by default (`usboverssh`) as the primary product surface
+- ✅ Async SSH communication with russh library
+- ✅ Configuration management via TOML
+- ✅ Structured logging with tracing
+- ✅ Error handling with comprehensive error types
 
-## 📋 Requirements
+### Rust Core
 
-### Linux (Server & Client)
-
-- Kernel with USB/IP support (`usbip-core`, `usbip-host`, `vhci-hcd`)
-- Root/sudo for kernel module loading
-
-### macOS (Client Only)
-
-- No special requirements
-
-### Windows (Client Only)
-
-- USB/IP driver (USBIP-WIN)
-
-### Load Kernel Modules (Linux)
-
-```bash
-# On the USB/IP server (exporting devices)
-sudo modprobe usbip-host
-
-# On the USB/IP client (attaching devices)
-sudo modprobe vhci-hcd
-```
-
-## 📚 CLI Reference
-
-```
-USAGE:
-    usboverssh [OPTIONS] [COMMAND]
-
-COMMANDS:
-    list        List USB devices (local or remote)
-    attach      Attach a remote USB device
-    detach      Detach an attached device
-    status      Show currently attached devices
-    serve       Start USB/IP server
-    tui         Interactive TUI mode
-    config      Configuration management
-    completions Generate shell completions
-    help        Print help information
-
-OPTIONS:
-    -v, --verbose       Increase verbosity
-    -q, --quiet         Suppress output
-    -c, --config <FILE> Configuration file path
-        --format <FMT>  Output format (text, json)
-    -h, --help          Print help
-    -V, --version       Print version
-```
-
-## 🔒 Security Considerations
-
-- All USB traffic is encrypted through SSH
-- SSH key-based authentication recommended
-- Only bind server to localhost when using SSH tunnels
-- Firewall the USB/IP port  from untrusted networks
-
-## 📄 License
-
-This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-🌟 **The developer of this tool is not responsible for any type of activity done by you using this tool. Use at your own risk.** 🌟
-
-USBoverSSH is designed for legitimate USB device sharing over secure connections. Always ensure you have proper authorization before accessing remote USB devices. Unauthorized access may violate privacy and security laws.
+- ✅ Cross-platform USB device enumeration (Linux: sysfs, macOS/Windows: nusb)
+- ✅ SSH tunneling with key-based authentication
+- ✅ USB/IP protocol implementation (server-side for Linux)
+- ✅ Device filtering (bus ID, VID:PID, serial, product name, device class)
+- ✅ Device manager with find and filter operations
+- ✅ Configuration with named hosts and auto-attach rules
+- ✅ Persistent connections with auto-reconnect
+- ✅ Daemon mode for background operation
+- ✅ Kernel module management (Linux: usbip-host, vhci-hcd)
+- ✅ VHCI attachment/detachment (Linux only)
+- ✅ Shell completion generation
 
 ---
 
-<div align="center">
+## Feature Matrix
 
-**Made with ❤️ by [@ImKKingshuk](https://github.com/ImKKingshuk)**
+### Device Management
 
-*If you find this project useful, please consider giving it a ⭐️*
+- ✅ List local USB devices (all, with class filtering)
+- ✅ List remote USB devices via SSH
+- ✅ Device information retrieval (bus ID, VID:PID, class, speed, manufacturer, product, serial)
+- ✅ Attach remote USB devices (by VID:PID, product name, bus ID)
+- ✅ Detach attached devices (specific or all)
+- ✅ Show currently attached devices (VHCI status)
+- ✅ Device filtering by multiple criteria
+- ✅ Persistent mode with auto-reconnect
+- ✅ Daemon mode for background operation
 
-</div>
+### USB/IP Server
+
+- ✅ Start USB/IP server (Linux only)
+- ✅ TCP and Unix socket listeners
+- ✅ Device export with filtering
+- ✅ Export all devices option
+- ✅ Device list request handling
+- ✅ Import (attach) request handling
+- ✅ Kernel module auto-loading (Linux)
+
+### SSH Tunneling
+
+- ✅ SSH connection establishment with russh
+- ✅ Key-based authentication (ed25519, rsa, ecdsa)
+- ✅ Remote command execution
+- ✅ Unix socket forwarding
+- ✅ Connection state management
+- ✅ Keep-alive support
+- ✅ Server host key verification
+
+### Configuration
+
+- ✅ TOML-based configuration
+- ✅ Named host configurations
+- ✅ SSH settings (identity file, config file, agent forwarding)
+- ✅ General settings (reconnect delay, timeout, verbosity)
+- ✅ Logging settings (level, format, file, color)
+- ✅ TUI settings (refresh interval, mouse, theme, show serial/speed)
+- ✅ Auto-attach rules with device filters
+- ✅ Configuration init, show, path, add-host commands
+
+### Platform Support
+
+- ✅ Linux: Full support (server + client) with kernel modules
+- ✅ macOS: Client only (device enumeration via nusb)
+- ✅ Windows: Client only (device enumeration via nusb)
+- ✅ Kernel module checking and loading (Linux)
+- ✅ VHCI port management (Linux)
+- ✅ Device binding/unbinding (Linux)
+
+### TUI Features
+
+- ✅ Tabbed interface (Local Devices, Remote Devices, Attached, Hosts)
+- ✅ Device lists with status indicators
+- ✅ Host connection management
+- ✅ Attach/detach operations
+- ✅ Help popup
+- ✅ Connect dialog
+- ✅ Status bar with keybinding hints
+- ✅ Auto-refresh
+- ✅ Mouse support
+
+---
+
+## Requirements
+
+- **OS**: macOS, Linux, Windows
+- **Rust**: 1.75+ (for building from source)
+- **Linux Server**: Kernel with USB/IP support (usbip-core, usbip-host modules)
+- **Linux Client**: Kernel with VHCI support (vhci-hcd module)
+- **macOS/Windows**: No special requirements (client only)
+- **SSH**: SSH key for authentication (recommended)
+
+## Configuration
+
+USBoverSSH stores configuration in the platform-appropriate data directory:
+
+- **Linux**: `~/.config/usboverssh/config.toml`
+- **macOS**: `~/Library/Application Support/usboverssh/config.toml`
+- **Windows**: `%APPDATA%\usboverssh\config.toml`
+
+Configuration includes:
+
+- Named host configurations (hostname, port, user, identity file, device filters)
+- SSH settings (default port, identity file, config file, agent forwarding, keepalive)
+- General settings (reconnect delay, max reconnect attempts, connection timeout)
+- Logging settings (level, format, file, color)
+- TUI settings (refresh interval, mouse, theme, show serial/speed)
+- Auto-attach rules (device filters, target host, enabled status)
+
+## Platform Support
+
+### Linux (Full Support)
+
+- USB device enumeration via sysfs
+- USB/IP server functionality
+- VHCI client attachment
+- Kernel module management (usbip-host, vhci-hcd)
+- Device binding/unbinding
+- All features supported
+
+### macOS (Client Only)
+
+- USB device enumeration via nusb
+- SSH tunneling and remote device listing
+- USB/IP client functionality (userspace)
+- No server functionality
+
+### Windows (Client Only)
+
+- USB device enumeration via nusb
+- SSH tunneling and remote device listing
+- USB/IP client functionality (userspace)
+- No server functionality
+
+## Device Classes Supported
+
+USB device classes recognized and filtered:
+
+- Audio, Communication (COM), HID, Physical, Image, Printer, Mass Storage, Hub
+- CDC Data, SmartCard, Content Security, Video, Personal Healthcare, Audio/Video
+- Billboard, USB Type-C Bridge, Diagnostic, Wireless Controller
+- Miscellaneous, Application Specific, Vendor Specific
+
+## Disclaimer
+
+**USBoverSSH: The Ultimate USB over SSH Solution** is developed for USB device sharing and tunneling purposes. It should be used responsibly and in compliance with all applicable laws and regulations. The developer of this tool is not responsible for any misuse or illegal activities conducted with this tool.
+
+USB device sharing should only be performed with proper authorization and understanding of the implications. Accessing remote USB devices may affect system functionality and security. Always ensure proper authorization before using USBoverSSH for device sharing. Always adhere to ethical practices and comply with all applicable laws and regulations.
+
+## License
+
+This project is licensed under the GPL-3.0-only License.
+
+<h3 align="center">Happy USB Tunneling with USBoverSSH! 🚀</h3>

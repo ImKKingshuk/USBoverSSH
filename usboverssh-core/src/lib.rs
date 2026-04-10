@@ -18,7 +18,7 @@
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
 //!     let config = Config::load_or_default()?;
-//!     let manager = DeviceManager::new()?;
+//!     let mut manager = DeviceManager::new()?;
 //!     
 //!     for device in manager.list_devices()? {
 //!         println!("{}", device);
@@ -37,7 +37,7 @@ pub mod server;
 pub mod tunnel;
 
 pub use config::Config;
-pub use device::{DeviceFilter, DeviceInfo, DeviceManager, DeviceSpeed};
+pub use device::{DeviceFilter, DeviceInfo, DeviceManager, DeviceSpeed, glob_match};
 pub use error::{Error, Result};
 pub use protocol::UsbIpProtocol;
 pub use server::Server;

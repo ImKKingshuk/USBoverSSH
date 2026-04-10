@@ -3,33 +3,138 @@
 # ══════════════════════════════════════════════════════════════════════════════
 /target/
 **/*.rs.bk
-Cargo.lock
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Rust specific
+# ══════════════════════════════════════════════════════════════════════════════
+# Cargo
+/target/
+**/*.rs.bk
+**/*.rmeta
+# Cargo cache
+.cargo/
+# Cargo build cache
+Cargo.toml.orig
+# Rust Analyzer
+.rust-analyzer/
+# Cargo expand
+cargo-expand-target/
 
 # ══════════════════════════════════════════════════════════════════════════════
 # IDE / Editor
 # ══════════════════════════════════════════════════════════════════════════════
+# JetBrains
 .idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+# VS Code
 .vscode/
+*.code-workspace
+# Vim/Neovim
 *.swp
 *.swo
+*.swn
+*.un~
+Session.vim
+Sessionx.vim
+.netrwhist
+# Emacs
 *~
+\#*\#
+.\#*
+auto-save-list
+tramp
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+# TextMate
+*.tmproj
+*.tmproject
+# Kate
+*.kate-swp
+# Eclipse
 .project
 .classpath
 .settings/
-*.sublime-workspace
-*.sublime-project
+.metadata
+bin/
+tmp/
+*.tmp
+# Visual Studio
+.vs/
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+# AppCode
+.idea/
+# Android Studio
+.idea/
+*.iml
+.gradle/
+local.properties
+.DS_Store
+build/
+.cxx/
 
 # ══════════════════════════════════════════════════════════════════════════════
 # OS generated files
 # ══════════════════════════════════════════════════════════════════════════════
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.url
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+.fuse_hidden*
+# KDE
+.directory
+.kde4/
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SSH Keys and Certificates
@@ -40,15 +145,30 @@ Desktop.ini
 *.pfx
 *.jks
 *.keystore
+*.csr
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.p7r
+*.p7s
 id_rsa
 id_rsa.pub
 id_ed25519
 id_ed25519.pub
 id_ecdsa
 id_ecdsa.pub
-*.crt
-*.cer
+id_dsa
+id_dsa.pub
 known_hosts
+authorized_keys
+ssh_config
+ssh_host_*
+ssh_known_hosts
+.ssh/
+*.asc
+*.gpg
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Secrets and Environment Files
@@ -56,19 +176,52 @@ known_hosts
 .env
 .env.*
 !.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.secret
 secrets.toml
 secrets.json
+secrets.yaml
+secrets.yml
 credentials.json
+credentials.toml
+credentials.yaml
+credentials.yml
 *.credentials
+*.keychain
+*.p12
+*.pfx
+passwords.txt
+passwords.json
+passwords.yaml
+passwords.yml
+private_key.pem
+private_key.*
+api_keys.*
+secrets/
+.secrets/
+*.sops.yaml
+*.sops.yml
+*.sops.json
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Local Configuration
 # ══════════════════════════════════════════════════════════════════════════════
 config/local.toml
 config/config.toml
+config/local.yaml
+config/local.yml
+config/local.json
 usboverssh.toml
+usboverssh.local.toml
+*.local.toml
+*.local.yaml
+*.local.yml
+*.local.json
 !config/usboverssh.toml.example
+!config/*.example
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Logs
@@ -76,6 +229,9 @@ usboverssh.toml
 *.log
 logs/
 *.log.*
+log/
+*.out
+*.err
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Test and Coverage
@@ -85,25 +241,85 @@ logs/
 coverage/
 *.gcda
 *.gcno
+*.gcov
 lcov.info
 tarpaulin-report.html
+*.prof
+*.profraw
+*.profdata
+html/
+.grcov/
+test-results/
+.nyc_output/
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.coverage
+.coverage.*
+*.cover.hpc
+hspec-*.html
+junit.xml
+test-results/
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Release/Distribution artifacts
 # ══════════════════════════════════════════════════════════════════════════════
-*.tar.gz
-*.zip
 *.deb
 *.rpm
 *.dmg
 *.msi
 *.exe
+*.app
+*.apk
+*.aab
+*.ipa
 dist/
 release/
+build/
+out/
+artifacts/
+bin/
+pkg/
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Crash reports and dumps
 # ══════════════════════════════════════════════════════════════════════════════
 *.dump
 *.core
+core.*
 crash-*.txt
+*.dmp
+*.mdmp
+*.stackdump
+heap-*.heap
+*.heap
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Temporary files
+# ══════════════════════════════════════════════════════════════════════════════
+*.tmp
+*.temp
+*.tempfile
+*.swp
+*.swo
+*.bak
+*.backup
+*.old
+*.orig
+*~
+.cache/
+tmp/
+temp/
+*.cache
+.cache-*/
+tmp.*/
+temp.*/
+*.pid
+*.seed
+*.pid.lock
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CI/CD
+# ══════════════════════════════════════════════════════════════════════════════
+.github/workflows/*.log

@@ -46,7 +46,7 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
 }
 
 /// Check if a string is a valid USB bus ID format
-fn is_valid_bus_id(name: &str) -> bool {
+pub fn is_valid_bus_id(name: &str) -> bool {
     // Valid formats: "1-1", "1-1.2", "3-2.4.1"
     if !name.contains('-') {
         return false;
@@ -301,19 +301,4 @@ fn write_sysfs<P: AsRef<Path>, S: AsRef<str>>(path: P, data: S) -> Result<()> {
             Error::Io(e)
         }
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_valid_bus_id() {
-        assert!(is_valid_bus_id("1-1"));
-        assert!(is_valid_bus_id("3-1.2"));
-        assert!(is_valid_bus_id("1-1.2.3.4"));
-        assert!(!is_valid_bus_id("usb1"));
-        assert!(!is_valid_bus_id("1-"));
-        assert!(!is_valid_bus_id("-1"));
-    }
 }

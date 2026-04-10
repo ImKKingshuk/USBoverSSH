@@ -356,7 +356,7 @@ impl DeviceFilter {
 }
 
 /// Simple glob matching (supports * wildcard)
-fn glob_match(pattern: &str, text: &str) -> bool {
+pub fn glob_match(pattern: &str, text: &str) -> bool {
     let pattern_lower = pattern.to_lowercase();
     let text_lower = text.to_lowercase();
     
@@ -448,38 +448,5 @@ impl DeviceManager {
 impl Default for DeviceManager {
     fn default() -> Self {
         Self::new().expect("Failed to create DeviceManager")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_filter_parse_bus_id() {
-        let filter = DeviceFilter::parse("3-1.2");
-        assert_eq!(filter.bus_id, Some("3-1.2".to_string()));
-    }
-
-    #[test]
-    fn test_filter_parse_vid_pid() {
-        let filter = DeviceFilter::parse("1234:5678");
-        assert_eq!(filter.vendor_id, Some(0x1234));
-        assert_eq!(filter.product_id, Some(0x5678));
-    }
-
-    #[test]
-    fn test_glob_match() {
-        assert!(glob_match("foo", "foobar"));
-        assert!(glob_match("*bar", "foobar"));
-        assert!(glob_match("foo*", "foobar"));
-        assert!(glob_match("*ob*", "foobar"));
-        assert!(!glob_match("baz", "foobar"));
-    }
-
-    #[test]
-    fn test_device_speed() {
-        assert_eq!(DeviceSpeed::from_speed_mbps(480).to_usbip_speed(), 3);
-        assert_eq!(DeviceSpeed::from_speed_mbps(5000).to_usbip_speed(), 5);
     }
 }

@@ -14,6 +14,9 @@ mod windows_impl;
 use crate::device::DeviceInfo;
 use crate::error::Result;
 
+#[cfg(target_os = "linux")]
+pub use linux::is_valid_bus_id;
+
 /// Enumerate all USB devices on the system
 pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
     #[cfg(target_os = "linux")]
