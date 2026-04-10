@@ -5,6 +5,7 @@
 use crate::device::{DeviceFilter, DeviceManager};
 use crate::error::{Error, Result};
 use crate::protocol::{OpCode, UsbIpDeviceDescriptor, UsbIpHeader, USBIP_VERSION};
+use crate::rate_limit::RateLimiter;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
