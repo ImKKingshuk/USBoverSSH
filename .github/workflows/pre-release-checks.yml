@@ -2,9 +2,6 @@ name: pre-release checks
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, develop]
-  pull_request:
 
 jobs:
   security-scan:
