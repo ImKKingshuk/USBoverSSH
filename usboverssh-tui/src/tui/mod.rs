@@ -15,7 +15,7 @@ use crossterm::{
 use ratatui::prelude::*;
 use std::io;
 use std::time::Duration;
-use usboverssh_core::Config;
+use usboverssh::Config;
 
 /// Run the TUI
 pub async fn run(connect_on_start: bool, config: Config) -> Result<()> {

@@ -1,6 +1,6 @@
 // Unit tests for configuration
 
-use usboverssh_core::config::HostConfig;
+use usboverssh::config::HostConfig;
 
 #[test]
 fn test_host_parse() {

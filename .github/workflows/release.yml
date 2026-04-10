@@ -62,9 +62,11 @@ jobs:
       - name: Build release
         run: |
           if [ "${{ matrix.use_cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
+            cross build --release --target ${{ matrix.target }} --bin usboverssh
+            cross build --release --target ${{ matrix.target }} --bin usboverssh-cli
           else
-            cargo build --release --target ${{ matrix.target }}
+            cargo build --release --target ${{ matrix.target }} --bin usboverssh
+            cargo build --release --target ${{ matrix.target }} --bin usboverssh-cli
           fi
         shell: bash
 
@@ -74,8 +76,10 @@ jobs:
           cd target/${{ matrix.target }}/release
           if [ "${{ runner.os }}" = "Windows" ]; then
             7z a ../../../usboverssh-${{ matrix.target }}.zip usboverssh.exe
+            7z a ../../../usboverssh-cli-${{ matrix.target }}.zip usboverssh-cli.exe
           else
             tar czf ../../../usboverssh-${{ matrix.target }}.tar.gz usboverssh
+            tar czf ../../../usboverssh-cli-${{ matrix.target }}.tar.gz usboverssh-cli
           fi
           cd ../../..
 
@@ -83,7 +87,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
-          path: usboverssh-${{ matrix.target }}.*
+          path: |
+            usboverssh-${{ matrix.target }}.*
+            usboverssh-cli-${{ matrix.target }}.*
 
   upload-release:
     name: Upload to GitHub Release

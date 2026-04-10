@@ -1,7 +1,7 @@
 // Unit tests for Linux platform support
 
 #[cfg(target_os = "linux")]
-use usboverssh_core::platform;
+use usboverssh::platform;
 
 #[test]
 #[cfg(target_os = "linux")]

@@ -1,7 +1,7 @@
 // Unit tests for USB/IP protocol
 
-use usboverssh_core::protocol::{OpCode, USBIP_VERSION, UsbIpDeviceDescriptor, UsbIpHeader};
-use usboverssh_core::device::{DeviceClass, DeviceSpeed, DeviceInfo};
+use usboverssh::protocol::{OpCode, USBIP_VERSION, UsbIpDeviceDescriptor, UsbIpHeader};
+use usboverssh::device::{DeviceClass, DeviceSpeed, DeviceInfo};
 
 #[test]
 fn test_header_serialization() {

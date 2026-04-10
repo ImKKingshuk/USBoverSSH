@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "usboverssh-tui"
+name = "usboverssh"
 path = "src/main.rs"
 
 [dependencies]
