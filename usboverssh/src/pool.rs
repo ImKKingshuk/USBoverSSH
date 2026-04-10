@@ -288,7 +288,7 @@ impl DevicePool {
         // Try to reserve for queued users
         for entry in to_reserve {
             if let Err(_) = self
-                .reserve_device(entry.device_bus_id, entry.user_id, None)
+                .reserve_device(entry.device_bus_id.clone(), entry.user_id.clone(), None)
                 .await
             {
                 // If still can't reserve, put back in queue
@@ -311,15 +311,19 @@ impl DevicePool {
             reservations: reservations.values().cloned().collect(),
         };
 
-        let json = serde_json::to_string_pretty(&state)?;
-        fs::write(path, json)?;
+        let json = serde_json::to_string_pretty(&state)
+            .map_err(|e| Error::Pool(format!("Failed to serialize pool state: {}", e)))?;
+        fs::write(path, json)
+            .map_err(|e| Error::Pool(format!("Failed to write pool state: {}", e)))?;
         Ok(())
     }
 
     /// Load pool state from file
     pub fn load_from_file(path: &Path) -> Result<PoolState> {
-        let json = fs::read_to_string(path)?;
-        let state: PoolState = serde_json::from_str(&json)?;
+        let json = fs::read_to_string(path)
+            .map_err(|e| Error::Pool(format!("Failed to read pool state: {}", e)))?;
+        let state: PoolState = serde_json::from_str(&json)
+            .map_err(|e| Error::Pool(format!("Failed to deserialize pool state: {}", e)))?;
         Ok(state)
     }
 }
@@ -415,8 +419,10 @@ impl PoolManager {
             })
             .collect();
 
-        let json = serde_json::to_string_pretty(&states)?;
-        fs::write(path, json)?;
+        let json = serde_json::to_string_pretty(&states)
+            .map_err(|e| Error::Pool(format!("Failed to serialize pool states: {}", e)))?;
+        fs::write(path, json)
+            .map_err(|e| Error::Pool(format!("Failed to write pool states: {}", e)))?;
         Ok(())
     }
 }

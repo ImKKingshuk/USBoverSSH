@@ -94,7 +94,7 @@ impl DeviceListCache {
     }
 
     /// Get cache statistics
-    pub fn stats(&self) -> CacheStats {
+    pub async fn stats(&self) -> CacheStats {
         CacheStats {
             total_hits: self.total_hits.load(std::sync::atomic::Ordering::Relaxed),
             total_misses: self.total_misses.load(std::sync::atomic::Ordering::Relaxed),
@@ -233,7 +233,7 @@ mod tests {
         // Miss
         cache.get("nonexistent").await;
         
-        let stats = cache.stats();
+        let stats = cache.stats().await;
         assert_eq!(stats.total_hits, 1);
         assert_eq!(stats.total_misses, 1);
         assert_eq!(stats.entry_count, 1);
@@ -251,7 +251,7 @@ mod tests {
         
         let removed = cache.cleanup_expired().await;
         assert_eq!(removed, 1);
-        assert_eq!(cache.stats().entry_count, 1);
+        assert_eq!(cache.stats().await.entry_count, 1);
     }
 
     #[tokio::test]
