@@ -106,6 +106,14 @@ impl App {
             })
             .collect();
 
+        let pool_config = PoolConfig {
+            max_reservations: config.pool.max_reservations_per_pool,
+            default_timeout_seconds: config.pool.default_timeout_seconds,
+            persistence_path: config.pool.persistence_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+            cleanup_interval_seconds: config.pool.cleanup_interval_seconds,
+        };
+        let cache_ttl = config.performance.device_cache_ttl_seconds;
+
         Self {
             config,
             active_pane: Pane::LocalDevices,
@@ -119,13 +127,8 @@ impl App {
             show_status_panel: true,
             last_refresh: Instant::now(),
             refresh_interval,
-            pool_manager: Arc::new(PoolManager::new(PoolConfig {
-                max_reservations: config.pool.max_reservations_per_pool,
-                default_timeout_seconds: config.pool.default_timeout_seconds,
-                persistence_path: config.pool.persistence_path.as_ref().map(|p| p.to_string_lossy().to_string()),
-                cleanup_interval_seconds: config.pool.cleanup_interval_seconds,
-            })),
-            cache: Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)),
+            pool_manager: Arc::new(PoolManager::new(pool_config)),
+            cache: Arc::new(DeviceListCache::new(cache_ttl)),
         }
     }
 
@@ -179,6 +182,8 @@ impl App {
             Pane::RemoteDevices => self.remote_devices.values().map(|v| v.len()).sum(),
             Pane::AttachedDevices => self.attached_devices.len(),
             Pane::Hosts => self.hosts.len(),
+            Pane::PoolStatus => 1, // Single status view
+            Pane::CacheStatus => 1, // Single status view
         }
     }
 
