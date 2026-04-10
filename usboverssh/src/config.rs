@@ -8,6 +8,89 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+/// Validate a file path for security
+fn validate_file_path(path: &Path) -> Result<()> {
+    let path_str = path.to_string_lossy();
+
+    // Check for path traversal attempts
+    if path_str.contains("..") {
+        return Err(Error::Config(format!(
+            "Path traversal detected in '{}'",
+            path_str
+        )));
+    }
+
+    // Check for null bytes
+    if path_str.contains('\0') {
+        return Err(Error::Config(format!(
+            "Null byte detected in path '{}'",
+            path_str
+        )));
+    }
+
+    Ok(())
+}
+
+/// Validate host configuration
+fn validate_host_config(name: &str, host: &HostConfig) -> Result<()> {
+    // Validate host name is not empty
+    if name.is_empty() {
+        return Err(Error::Config("Host name cannot be empty".to_string()));
+    }
+
+    // Validate hostname is not empty
+    if host.hostname.is_empty() {
+        return Err(Error::Config(format!(
+            "Host '{}' has empty hostname",
+            name
+        )));
+    }
+
+    // Validate port range
+    if host.port == 0 {
+        return Err(Error::Config(format!(
+            "Host '{}' has invalid port 0",
+            name
+        )));
+    }
+
+    // Validate username is not empty
+    if host.user.is_empty() {
+        return Err(Error::Config(format!(
+            "Host '{}' has empty username",
+            name
+        )));
+    }
+
+    // Validate identity file path if specified
+    if let Some(ref path) = host.identity_file {
+        validate_file_path(path)?;
+    }
+
+    Ok(())
+}
+
+/// Validate auto-attach rule
+fn validate_auto_attach_rule(index: usize, rule: &AutoAttachRule) -> Result<()> {
+    // Validate rule name is not empty
+    if rule.name.is_empty() {
+        return Err(Error::Config(format!(
+            "Auto-attach rule at index {} has empty name",
+            index
+        )));
+    }
+
+    // Validate target host is not empty
+    if rule.host.is_empty() {
+        return Err(Error::Config(format!(
+            "Auto-attach rule '{}' has empty target host",
+            rule.name
+        )));
+    }
+
+    Ok(())
+}
+
 /// Main configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
@@ -42,7 +125,11 @@ impl Config {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| Error::Config(format!("Failed to read config: {}", e)))?;
 
-        toml::from_str(&contents).map_err(|e| Error::ConfigParse(format!("Invalid config: {}", e)))
+        let config: Self = toml::from_str(&contents)
+            .map_err(|e| Error::ConfigParse(format!("Invalid config: {}", e)))?;
+
+        config.validate()?;
+        Ok(config)
     }
 
     /// Save configuration to default location
@@ -83,6 +170,33 @@ impl Config {
         // Parse as user@host[:port]
         HostConfig::parse(name_or_spec)
     }
+
+    /// Validate configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate general settings
+        self.general.validate()?;
+
+        // Validate SSH settings
+        self.ssh.validate()?;
+
+        // Validate logging settings
+        self.logging.validate()?;
+
+        // Validate TUI settings
+        self.tui.validate()?;
+
+        // Validate all host configurations
+        for (name, host) in &self.hosts {
+            validate_host_config(name, host)?;
+        }
+
+        // Validate auto-attach rules
+        for (i, rule) in self.auto_attach.iter().enumerate() {
+            validate_auto_attach_rule(i, rule)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// General application settings
@@ -107,6 +221,24 @@ impl Default for GeneralConfig {
             connection_timeout: 30,
             verbose: false,
         }
+    }
+}
+
+impl GeneralConfig {
+    pub fn validate(&self) -> Result<()> {
+        if self.reconnect_delay == 0 {
+            return Err(Error::Config("reconnect_delay must be greater than 0".to_string()));
+        }
+        if self.reconnect_delay > 3600 {
+            return Err(Error::Config("reconnect_delay must be less than 3600 seconds (1 hour)".to_string()));
+        }
+        if self.connection_timeout == 0 {
+            return Err(Error::Config("connection_timeout must be greater than 0".to_string()));
+        }
+        if self.connection_timeout > 3600 {
+            return Err(Error::Config("connection_timeout must be less than 3600 seconds (1 hour)".to_string()));
+        }
+        Ok(())
     }
 }
 
@@ -145,6 +277,25 @@ impl Default for SshConfig {
     }
 }
 
+impl SshConfig {
+    pub fn validate(&self) -> Result<()> {
+        // Validate port range (1-65535)
+        if self.default_port == 0 {
+            return Err(Error::Config("default_port cannot be 0".to_string()));
+        }
+
+        // Validate keepalive interval
+        if self.keepalive_interval == 0 {
+            return Err(Error::Config("keepalive_interval must be greater than 0".to_string()));
+        }
+        if self.keepalive_interval > 3600 {
+            return Err(Error::Config("keepalive_interval must be less than 3600 seconds (1 hour)".to_string()));
+        }
+
+        Ok(())
+    }
+}
+
 /// Logging settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -167,6 +318,37 @@ impl Default for LoggingConfig {
             file: None,
             color: true,
         }
+    }
+}
+
+impl LoggingConfig {
+    pub fn validate(&self) -> Result<()> {
+        // Validate log level
+        let valid_levels = ["trace", "debug", "info", "warn", "error"];
+        if !valid_levels.contains(&self.level.as_str()) {
+            return Err(Error::Config(format!(
+                "Invalid log level '{}'. Must be one of: {}",
+                self.level,
+                valid_levels.join(", ")
+            )));
+        }
+
+        // Validate log format
+        let valid_formats = ["text", "json"];
+        if !valid_formats.contains(&self.format.as_str()) {
+            return Err(Error::Config(format!(
+                "Invalid log format '{}'. Must be one of: {}",
+                self.format,
+                valid_formats.join(", ")
+            )));
+        }
+
+        // Validate file path if specified
+        if let Some(ref path) = self.file {
+            validate_file_path(path)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -195,6 +377,20 @@ impl Default for TuiConfig {
             show_serial: true,
             show_speed: true,
         }
+    }
+}
+
+impl TuiConfig {
+    pub fn validate(&self) -> Result<()> {
+        // Validate refresh interval
+        if self.refresh_interval < 100 {
+            return Err(Error::Config("refresh_interval must be at least 100ms".to_string()));
+        }
+        if self.refresh_interval > 60000 {
+            return Err(Error::Config("refresh_interval must be less than 60000ms (1 minute)".to_string()));
+        }
+
+        Ok(())
     }
 }
 
