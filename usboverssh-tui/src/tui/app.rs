@@ -120,7 +120,7 @@ impl App {
             last_refresh: Instant::now(),
             refresh_interval,
             pool_manager: Arc::new(PoolManager::new(config.pool.clone())),
-            cache: Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)),
+            cache: Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds as u32)),
         }
     }
 
@@ -149,7 +149,9 @@ impl App {
             Pane::LocalDevices => Pane::RemoteDevices,
             Pane::RemoteDevices => Pane::AttachedDevices,
             Pane::AttachedDevices => Pane::Hosts,
-            Pane::Hosts => Pane::LocalDevices,
+            Pane::Hosts => Pane::PoolStatus,
+            Pane::PoolStatus => Pane::CacheStatus,
+            Pane::CacheStatus => Pane::LocalDevices,
         };
     }
 

@@ -2,6 +2,7 @@
 //!
 //! Provides shared device pools with reservation system for multi-user access.
 
+use crate::config::PoolConfig;
 use crate::error::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
