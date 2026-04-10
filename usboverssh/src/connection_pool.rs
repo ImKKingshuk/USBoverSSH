@@ -139,7 +139,9 @@ impl ConnectionPool {
             .collect();
 
         if host_connections.len() >= self.config.max_size_per_host {
-            return Err(Error::Other("Connection pool full for this host".to_string()));
+            return Err(Error::Other(
+                "Connection pool full for this host".to_string(),
+            ));
         }
 
         // Create new connection (placeholder)

@@ -69,18 +69,15 @@ impl RetryConfig {
 
     /// Calculate delay for a given attempt number
     fn calculate_delay(&self, attempt: u32) -> Duration {
-        let delay_ms = self.initial_delay.as_millis() as f64
-            * self.multiplier.powi(attempt as i32 - 1);
+        let delay_ms =
+            self.initial_delay.as_millis() as f64 * self.multiplier.powi(attempt as i32 - 1);
 
         Duration::from_millis(delay_ms as u64).min(self.max_delay)
     }
 }
 
 /// Retry an async operation with exponential backoff
-pub async fn retry_with_backoff<F, Fut, T>(
-    config: RetryConfig,
-    operation: F,
-) -> Result<T>
+pub async fn retry_with_backoff<F, Fut, T>(config: RetryConfig, operation: F) -> Result<T>
 where
     F: Fn() -> Fut,
     Fut: Future<Output = Result<T>>,

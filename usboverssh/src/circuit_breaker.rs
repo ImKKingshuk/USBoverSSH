@@ -257,10 +257,9 @@ mod tests {
 
         // Fail until threshold
         for _ in 0..3 {
-            let _ = cb.call(|| async {
-                Err::<(), Error>(Error::Other("test error".to_string()))
-            })
-            .await;
+            let _ = cb
+                .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+                .await;
         }
 
         assert_eq!(cb.state().await, CircuitBreakerState::Open);
@@ -278,20 +277,21 @@ mod tests {
 
         // Fail until threshold
         for _ in 0..2 {
-            let _ = cb.call(|| async {
-                Err::<(), Error>(Error::Other("test error".to_string()))
-            })
-            .await;
+            let _ = cb
+                .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+                .await;
         }
 
         // Should block when open
-        let result = cb.call(|| async {
-            Err::<(), Error>(Error::Other("test error".to_string()))
-        })
-        .await;
+        let result = cb
+            .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+            .await;
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Circuit breaker is open"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Circuit breaker is open"));
     }
 
     #[tokio::test]
@@ -305,10 +305,9 @@ mod tests {
 
         // Fail until threshold
         for _ in 0..2 {
-            let _ = cb.call(|| async {
-                Err::<(), Error>(Error::Other("test error".to_string()))
-            })
-            .await;
+            let _ = cb
+                .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+                .await;
         }
 
         assert_eq!(cb.state().await, CircuitBreakerState::Open);
@@ -317,10 +316,9 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(150)).await;
 
         // Should transition to half-open on next call
-        let result = cb.call(|| async {
-            Err::<(), Error>(Error::Other("test error".to_string()))
-        })
-        .await;
+        let result = cb
+            .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+            .await;
 
         assert!(result.is_err());
         // The circuit breaker should now be in half-open state after the call
@@ -339,10 +337,9 @@ mod tests {
 
         // Fail until threshold
         for _ in 0..2 {
-            let _ = cb.call(|| async {
-                Err::<(), Error>(Error::Other("test error".to_string()))
-            })
-            .await;
+            let _ = cb
+                .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+                .await;
         }
 
         // Wait for timeout
@@ -368,10 +365,9 @@ mod tests {
 
         // Fail until threshold
         for _ in 0..2 {
-            let _ = cb.call(|| async {
-                Err::<(), Error>(Error::Other("test error".to_string()))
-            })
-            .await;
+            let _ = cb
+                .call(|| async { Err::<(), Error>(Error::Other("test error".to_string())) })
+                .await;
         }
 
         assert_eq!(cb.state().await, CircuitBreakerState::Open);

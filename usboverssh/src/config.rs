@@ -40,26 +40,17 @@ fn validate_host_config(name: &str, host: &HostConfig) -> Result<()> {
 
     // Validate hostname is not empty
     if host.hostname.is_empty() {
-        return Err(Error::Config(format!(
-            "Host '{}' has empty hostname",
-            name
-        )));
+        return Err(Error::Config(format!("Host '{}' has empty hostname", name)));
     }
 
     // Validate port range
     if host.port == 0 {
-        return Err(Error::Config(format!(
-            "Host '{}' has invalid port 0",
-            name
-        )));
+        return Err(Error::Config(format!("Host '{}' has invalid port 0", name)));
     }
 
     // Validate username is not empty
     if host.user.is_empty() {
-        return Err(Error::Config(format!(
-            "Host '{}' has empty username",
-            name
-        )));
+        return Err(Error::Config(format!("Host '{}' has empty username", name)));
     }
 
     // Validate identity file path if specified
@@ -227,16 +218,24 @@ impl Default for GeneralConfig {
 impl GeneralConfig {
     pub fn validate(&self) -> Result<()> {
         if self.reconnect_delay == 0 {
-            return Err(Error::Config("reconnect_delay must be greater than 0".to_string()));
+            return Err(Error::Config(
+                "reconnect_delay must be greater than 0".to_string(),
+            ));
         }
         if self.reconnect_delay > 3600 {
-            return Err(Error::Config("reconnect_delay must be less than 3600 seconds (1 hour)".to_string()));
+            return Err(Error::Config(
+                "reconnect_delay must be less than 3600 seconds (1 hour)".to_string(),
+            ));
         }
         if self.connection_timeout == 0 {
-            return Err(Error::Config("connection_timeout must be greater than 0".to_string()));
+            return Err(Error::Config(
+                "connection_timeout must be greater than 0".to_string(),
+            ));
         }
         if self.connection_timeout > 3600 {
-            return Err(Error::Config("connection_timeout must be less than 3600 seconds (1 hour)".to_string()));
+            return Err(Error::Config(
+                "connection_timeout must be less than 3600 seconds (1 hour)".to_string(),
+            ));
         }
         Ok(())
     }
@@ -286,10 +285,14 @@ impl SshConfig {
 
         // Validate keepalive interval
         if self.keepalive_interval == 0 {
-            return Err(Error::Config("keepalive_interval must be greater than 0".to_string()));
+            return Err(Error::Config(
+                "keepalive_interval must be greater than 0".to_string(),
+            ));
         }
         if self.keepalive_interval > 3600 {
-            return Err(Error::Config("keepalive_interval must be less than 3600 seconds (1 hour)".to_string()));
+            return Err(Error::Config(
+                "keepalive_interval must be less than 3600 seconds (1 hour)".to_string(),
+            ));
         }
 
         Ok(())
@@ -384,10 +387,14 @@ impl TuiConfig {
     pub fn validate(&self) -> Result<()> {
         // Validate refresh interval
         if self.refresh_interval < 100 {
-            return Err(Error::Config("refresh_interval must be at least 100ms".to_string()));
+            return Err(Error::Config(
+                "refresh_interval must be at least 100ms".to_string(),
+            ));
         }
         if self.refresh_interval > 60000 {
-            return Err(Error::Config("refresh_interval must be less than 60000ms (1 minute)".to_string()));
+            return Err(Error::Config(
+                "refresh_interval must be less than 60000ms (1 minute)".to_string(),
+            ));
         }
 
         Ok(())

@@ -1,12 +1,12 @@
 // Integration tests for TUI workflows
 
 use usboverssh::config::{Config, HostConfig};
-use usboverssh::device::{DeviceFilter, DeviceInfo, DeviceClass, DeviceSpeed};
+use usboverssh::device::{DeviceClass, DeviceFilter, DeviceInfo, DeviceSpeed};
 
 #[test]
 fn test_config_with_hosts() {
     let mut config = Config::default();
-    
+
     config.hosts.insert(
         "test_server".to_string(),
         HostConfig {
@@ -107,7 +107,7 @@ fn test_device_info_vid_pid() {
 #[test]
 fn test_config_validation_with_invalid_host() {
     let mut config = Config::default();
-    
+
     config.hosts.insert(
         "".to_string(),
         HostConfig {
@@ -127,7 +127,7 @@ fn test_config_validation_with_invalid_host() {
 #[test]
 fn test_config_validation_with_valid_config() {
     let mut config = Config::default();
-    
+
     config.hosts.insert(
         "test_server".to_string(),
         HostConfig {

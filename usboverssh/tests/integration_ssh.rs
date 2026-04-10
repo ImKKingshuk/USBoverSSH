@@ -1,12 +1,12 @@
 // Integration tests for SSH tunneling
 
-use usboverssh::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState};
-use usboverssh::connection_pool::{ConnectionPool, ConnectionPoolConfig};
-use usboverssh::retry::{RetryConfig, retry_with_backoff};
-use usboverssh::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use usboverssh::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState};
+use usboverssh::connection_pool::{ConnectionPool, ConnectionPoolConfig};
+use usboverssh::error::Error;
+use usboverssh::retry::{retry_with_backoff, RetryConfig};
 
 #[tokio::test]
 async fn test_retry_with_backoff_success() {
@@ -60,10 +60,9 @@ async fn test_circuit_breaker_closed_to_open() {
 
     // Fail until threshold
     for _ in 0..3 {
-        let _ = cb.call(|| async {
-            Err::<(), Error>(Error::Other("connection failed".to_string()))
-        })
-        .await;
+        let _ = cb
+            .call(|| async { Err::<(), Error>(Error::Other("connection failed".to_string())) })
+            .await;
     }
 
     assert_eq!(cb.state().await, CircuitBreakerState::Open);
@@ -80,20 +79,21 @@ async fn test_circuit_breaker_blocks_when_open() {
 
     // Fail until threshold
     for _ in 0..2 {
-        let _ = cb.call(|| async {
-            Err::<(), Error>(Error::Other("connection failed".to_string()))
-        })
-        .await;
+        let _ = cb
+            .call(|| async { Err::<(), Error>(Error::Other("connection failed".to_string())) })
+            .await;
     }
 
     // Should block when open
-    let result = cb.call(|| async {
-        Err::<(), Error>(Error::Other("connection failed".to_string()))
-    })
-    .await;
+    let result = cb
+        .call(|| async { Err::<(), Error>(Error::Other("connection failed".to_string())) })
+        .await;
 
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Circuit breaker is open"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Circuit breaker is open"));
 }
 
 #[tokio::test]
@@ -107,10 +107,9 @@ async fn test_circuit_breaker_reset() {
 
     // Fail until threshold
     for _ in 0..2 {
-        let _ = cb.call(|| async {
-            Err::<(), Error>(Error::Other("connection failed".to_string()))
-        })
-        .await;
+        let _ = cb
+            .call(|| async { Err::<(), Error>(Error::Other("connection failed".to_string())) })
+            .await;
     }
 
     assert_eq!(cb.state().await, CircuitBreakerState::Open);

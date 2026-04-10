@@ -1,7 +1,7 @@
 // Integration tests for USB/IP protocol
 
-use usboverssh::protocol::{OpCode, UsbIpHeader, USBIP_VERSION, UsbIpDeviceDescriptor};
-use usboverssh::device::{DeviceClass, DeviceSpeed, DeviceInfo};
+use usboverssh::device::{DeviceClass, DeviceInfo, DeviceSpeed};
+use usboverssh::protocol::{OpCode, UsbIpDeviceDescriptor, UsbIpHeader, USBIP_VERSION};
 
 #[test]
 fn test_usbip_header_serialization() {
