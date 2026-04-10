@@ -213,6 +213,7 @@ impl Server {
 
                                     if conn_count >= config.max_connections {
                                         warn!("Connection rejected: max connections reached");
+                                        let mut stream = stream;
                                         let _ = stream.shutdown();
                                         continue;
                                     }
@@ -247,16 +248,28 @@ impl Server {
         }
 
         // Wait for shutdown signal
-        tokio::select! {
-            _ = signal::ctrl_c() => {
-                info!("Received Ctrl+C, initiating graceful shutdown");
+        #[cfg(unix)]
+        {
+            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+            let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt()).unwrap();
+
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    info!("Received Ctrl+C, initiating graceful shutdown");
+                }
+                _ = sigterm.recv() => {
+                    info!("Received SIGTERM, initiating graceful shutdown");
+                }
+                _ = sigint.recv() => {
+                    info!("Received SIGINT, initiating graceful shutdown");
+                }
             }
-            _ = signal::unix(signal::unix::SignalKind::terminate()) => {
-                info!("Received SIGTERM, initiating graceful shutdown");
-            }
-            _ = signal::unix(signal::unix::SignalKind::interrupt()) => {
-                info!("Received SIGINT, initiating graceful shutdown");
-            }
+        }
+
+        #[cfg(not(unix))]
+        {
+            signal::ctrl_c().await.unwrap();
+            info!("Received Ctrl+C, initiating graceful shutdown");
         }
 
         // Send shutdown signal to all listeners
@@ -294,11 +307,6 @@ impl Server {
 
         info!("Graceful shutdown complete");
         Ok(())
-    }
-
-    /// Signal shutdown
-    pub fn shutdown(&self) {
-        let _ = self.shutdown_tx.send(());
     }
 }
 
