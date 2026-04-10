@@ -4,7 +4,7 @@ use crate::OutputFormat;
 use anyhow::Result;
 use colored::Colorize;
 use serde::Serialize;
-use usboverssh_core::Config;
+use usboverssh::Config;
 
 #[derive(Debug, Serialize)]
 struct AttachedDevice {

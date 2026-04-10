@@ -2717,7 +2717,38 @@ dependencies = [
 ]
 
 [[package]]
-name = "usboverssh-cli"
+name = "usboverssh"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "colored",
+ "dialoguer",
+ "dirs",
+ "futures",
+ "hostname",
+ "indicatif",
+ "libc",
+ "nix 0.29.0",
+ "nusb",
+ "once_cell",
+ "regex",
+ "russh",
+ "russh-keys",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml",
+ "tracing",
+ "uuid",
+ "whoami",
+ "windows 0.59.0",
+]
+
+[[package]]
+name = "usboverssh-tui"
 version = "1.0.0"
 dependencies = [
  "anyhow",
@@ -2740,34 +2771,30 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tui-textarea",
- "usboverssh-core",
+ "usboverssh",
 ]
 
 [[package]]
-name = "usboverssh-core"
+name = "usboverssh_headless_cli"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "chrono",
+ "clap",
+ "clap_complete",
+ "colored",
+ "console",
+ "dialoguer",
  "dirs",
- "futures",
- "hostname",
- "libc",
- "nix 0.29.0",
- "nusb",
- "once_cell",
- "regex",
- "russh",
- "russh-keys",
+ "indicatif",
  "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "toml",
  "tracing",
- "uuid",
- "whoami",
- "windows 0.59.0",
+ "tracing-subscriber",
+ "usboverssh",
 ]
 
 [[package]]

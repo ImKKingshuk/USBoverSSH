@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use usboverssh_core::{Config, DeviceInfo, DeviceManager};
+use usboverssh::{Config, DeviceInfo, DeviceManager};
 
 /// Active pane in the UI
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

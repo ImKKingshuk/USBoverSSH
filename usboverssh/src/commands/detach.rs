@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use colored::Colorize;
-use usboverssh_core::Config;
+use usboverssh::Config;
 
 /// Run the detach command
 pub async fn run(device_pattern: String, _config: &Config) -> Result<()> {

@@ -1,6 +1,6 @@
 [package]
-name = "usboverssh-cli"
-description = "Ultimate USB over SSH CLI - Connect USB devices securely over SSH"
+name = "usboverssh-tui"
+description = "USBoverSSH TUI - Interactive terminal UI for USB device management"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -8,11 +8,11 @@ license.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "usboverssh"
+name = "usboverssh-tui"
 path = "src/main.rs"
 
 [dependencies]
-usboverssh-core = { path = "../usboverssh-core" }
+usboverssh = { path = "../usboverssh" }
 
 tokio = { workspace = true }
 clap = { workspace = true }

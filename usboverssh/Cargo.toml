@@ -1,6 +1,6 @@
 [package]
-name = "usboverssh-core"
-description = "Core library for USB over SSH - USB/IP protocol implementation"
+name = "usboverssh"
+description = "USBoverSSH library - USB/IP protocol implementation and core functionality"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -15,6 +15,7 @@ nusb = { workspace = true }
 russh = { workspace = true }
 russh-keys = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 toml = { workspace = true }
 dirs = { workspace = true }
 tracing = { workspace = true }
@@ -26,6 +27,9 @@ once_cell = { workspace = true }
 regex = { workspace = true }
 whoami = { workspace = true }
 hostname = { workspace = true }
+colored = { workspace = true }
+indicatif = { workspace = true }
+dialoguer = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = { workspace = true }

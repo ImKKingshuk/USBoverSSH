@@ -1,9 +1,7 @@
 //! USBoverSSH CLI - Ultimate USB over SSH Tool
 //!
 //! A powerful cross-platform tool for connecting USB devices securely over SSH.
-
-mod commands;
-mod tui;
+//! Defaults to TUI mode, use --cli or --headless for CLI mode.
 
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
@@ -12,6 +10,7 @@ use colored::Colorize;
 use std::io;
 use tracing::Level;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use usboverssh::{Config, OutputFormat};
 
 /// USBoverSSH - Connect USB devices securely over SSH
 #[derive(Parser)]
@@ -57,16 +56,12 @@ pub struct Cli {
     #[arg(long, default_value = "text", global = true)]
     format: OutputFormat,
 
+    /// Run in CLI/headless mode (default is TUI mode)
+    #[arg(long, alias = "headless", global = true)]
+    cli: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
-}
-
-/// Output format for commands
-#[derive(Debug, Clone, Copy, Default, clap::ValueEnum)]
-pub enum OutputFormat {
-    #[default]
-    Text,
-    Json,
 }
 
 /// CLI subcommands
@@ -137,14 +132,6 @@ pub enum Commands {
         /// Device patterns to export
         #[arg(value_name = "DEVICE")]
         devices: Vec<String>,
-    },
-
-    /// Interactive TUI mode
-    #[command(visible_alias = "ui")]
-    Tui {
-        /// Connect to hosts from config on startup
-        #[arg(short, long)]
-        connect: bool,
     },
 
     /// Configuration management
@@ -250,75 +237,83 @@ async fn main() -> Result<()> {
     init_logging(cli.verbose, cli.quiet);
 
     // Load configuration
-    let config = usboverssh_core::Config::load_or_default()?;
+    let config = Config::load_or_default()?;
 
-    // Handle commands
-    match cli.command {
-        Some(Commands::List { host, all, class }) => {
-            if !cli.quiet {
-                print_banner();
-            }
-            commands::list::run(host, all, class, &config, cli.format).await
-        }
+    // Determine mode: CLI or TUI
+    let is_cli_mode = cli.cli || cli.command.is_some();
 
-        Some(Commands::Attach {
-            host,
-            device,
-            persistent,
-            daemon,
-        }) => {
-            if !cli.quiet && !daemon {
-                print_banner();
-            }
-            commands::attach::run(host, device, persistent, daemon, &config).await
-        }
-
-        Some(Commands::Detach { device }) => {
-            if !cli.quiet {
-                print_banner();
-            }
-            commands::detach::run(device, &config).await
-        }
-
-        Some(Commands::Status) => {
-            if !cli.quiet {
-                print_banner();
-            }
-            commands::status::run(&config, cli.format).await
-        }
-
-        Some(Commands::Serve {
-            address,
-            port,
-            all,
-            devices,
-        }) => {
-            if !cli.quiet {
-                print_banner();
-            }
-            commands::serve::run(address, port, all, devices, &config).await
-        }
-
-        Some(Commands::Tui { connect }) => tui::run(connect, config).await,
-
-        Some(Commands::Config { action }) => {
-            commands::config::run(action, &config, cli.quiet).await
-        }
-
-        Some(Commands::Completions { shell }) => {
-            let mut cmd = Cli::command();
-            generate(shell, &mut cmd, "usboverssh", &mut io::stdout());
-            Ok(())
-        }
-
-        None => {
-            // No command - run TUI by default
+    if is_cli_mode {
+        // CLI mode
+        if !cli.quiet {
             print_banner();
-            println!(
-                "{}",
-                "Run 'usboverssh --help' for usage information.\n".dimmed()
-            );
-            tui::run(false, config).await
         }
+
+        match cli.command {
+            Some(Commands::List { host, all, class }) => {
+                usboverssh::commands::list::run(host, all, class, &config, cli.format).await
+            }
+
+            Some(Commands::Attach {
+                host,
+                device,
+                persistent,
+                daemon,
+            }) => {
+                if !cli.quiet && !daemon {
+                    print_banner();
+                }
+                usboverssh::commands::attach::run(host, device, persistent, daemon, &config).await
+            }
+
+            Some(Commands::Detach { device }) => {
+                if !cli.quiet {
+                    print_banner();
+                }
+                usboverssh::commands::detach::run(device, &config).await
+            }
+
+            Some(Commands::Status) => {
+                if !cli.quiet {
+                    print_banner();
+                }
+                usboverssh::commands::status::run(&config, cli.format).await
+            }
+
+            Some(Commands::Serve {
+                address,
+                port,
+                all,
+                devices,
+            }) => {
+                if !cli.quiet {
+                    print_banner();
+                }
+                usboverssh::commands::serve::run(address, port, all, devices, &config).await
+            }
+
+            Some(Commands::Config { action }) => {
+                usboverssh::commands::config::run(action, &config, cli.quiet).await
+            }
+
+            Some(Commands::Completions { shell }) => {
+                let mut cmd = Cli::command();
+                generate(shell, &mut cmd, "usboverssh", &mut io::stdout());
+                Ok(())
+            }
+
+            None => {
+                // No command but --cli flag specified
+                println!(
+                    "{}",
+                    "Run 'usboverssh --help' for usage information.\n".dimmed()
+                );
+                Ok(())
+            }
+        }
+    } else {
+        // TUI mode - delegate to TUI binary
+        eprintln!("TUI mode is not yet implemented in this binary.");
+        eprintln!("Please run: usboverssh-tui");
+        Ok(())
     }
 }

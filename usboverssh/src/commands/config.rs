@@ -3,7 +3,7 @@
 use crate::ConfigAction;
 use anyhow::Result;
 use colored::Colorize;
-use usboverssh_core::Config;
+use usboverssh::Config;
 
 /// Run config subcommand
 pub async fn run(action: ConfigAction, config: &Config, quiet: bool) -> Result<()> {
@@ -82,7 +82,7 @@ fn init_config(force: bool, quiet: bool) -> Result<()> {
     }
 
     // Generate example config
-    let example = usboverssh_core::config::generate_example_config();
+    let example = usboverssh::config::generate_example_config();
     std::fs::write(&path, &example)?;
 
     if !quiet {
@@ -99,7 +99,7 @@ fn init_config(force: bool, quiet: bool) -> Result<()> {
 
 /// Add a host to configuration
 fn add_host(name: String, spec: String, config: &Config, quiet: bool) -> Result<()> {
-    use usboverssh_core::config::HostConfig;
+    use usboverssh::config::HostConfig;
 
     let mut config = config.clone();
     let host_config = HostConfig::parse(&spec);

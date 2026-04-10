@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "usboverssh-core",
-    "usboverssh-cli",
+    "usboverssh",
+    "usboverssh-tui",
+    "usboverssh_headless_cli",
 ]
 
 [workspace.package]

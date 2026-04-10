@@ -4,7 +4,7 @@ use anyhow::Result;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
-use usboverssh_core::{Config, SshSession, TunnelConfig};
+use crate::{Config, SshSession, TunnelConfig};
 
 /// Run the attach command
 pub async fn run(
@@ -94,11 +94,11 @@ async fn run_foreground(
 
 /// Attempt to attach a device
 async fn attempt_attach(
-    host_config: &usboverssh_core::config::HostConfig,
+    host_config: &crate::config::HostConfig,
     device_pattern: &str,
     pb: &ProgressBar,
     _config: &Config,
-) -> usboverssh_core::Result<()> {
+) -> crate::Result<()> {
     // Create SSH session
     let tunnel_config = TunnelConfig::new(host_config.clone());
     let mut session = SshSession::new(tunnel_config);
@@ -112,7 +112,7 @@ async fn attempt_attach(
     let bus_id = bus_id.trim();
 
     if bus_id.is_empty() {
-        return Err(usboverssh_core::Error::DeviceNotFound(
+        return Err(crate::Error::DeviceNotFound(
             device_pattern.to_string(),
         ));
     }
@@ -147,7 +147,7 @@ async fn attempt_attach(
             pb.set_message("Attached!");
         }
     } else {
-        return Err(usboverssh_core::Error::UsbIpAttach(format!(
+        return Err(crate::Error::UsbIpAttach(format!(
             "Remote attach failed: {}",
             response
         )));

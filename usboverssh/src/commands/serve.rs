@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use colored::Colorize;
-use usboverssh_core::{Config, DeviceFilter};
+use crate::{Config, DeviceFilter};
 
 /// Run the serve command
 pub async fn run(
@@ -24,7 +24,7 @@ pub async fn run(
     let filters: Vec<DeviceFilter> = devices.iter().map(|d| DeviceFilter::parse(d)).collect();
 
     // Create server configuration
-    let server_config = usboverssh_core::server::ServerConfig {
+    let server_config = crate::server::ServerConfig {
         listen_addr: Some(address.clone()),
         listen_port: port,
         unix_socket: None,
@@ -33,7 +33,7 @@ pub async fn run(
     };
 
     // Create and start server
-    let server = usboverssh_core::Server::new(server_config)?;
+    let server = crate::Server::new(server_config)?;
 
     // List available devices
     let available = server.available_devices().await?;

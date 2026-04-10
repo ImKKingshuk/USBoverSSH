@@ -3,7 +3,7 @@
 use crate::OutputFormat;
 use anyhow::Result;
 use colored::Colorize;
-use usboverssh_core::{Config, DeviceManager};
+use crate::{Config, DeviceManager};
 
 /// Run the list command
 pub async fn run(
@@ -144,7 +144,7 @@ async fn list_remote(
     config: &Config,
     format: OutputFormat,
 ) -> Result<()> {
-    use usboverssh_core::{SshSession, TunnelConfig};
+    use crate::{SshSession, TunnelConfig};
 
     let host_config = config.get_host(host_spec);
 
@@ -175,7 +175,7 @@ async fn list_remote(
     session.disconnect().await?;
 
     // Try to parse as JSON first
-    if let Ok(devices) = serde_json::from_str::<Vec<usboverssh_core::DeviceInfo>>(&output) {
+    if let Ok(devices) = serde_json::from_str::<Vec<crate::DeviceInfo>>(&output) {
         match format {
             OutputFormat::Text => {
                 println!(

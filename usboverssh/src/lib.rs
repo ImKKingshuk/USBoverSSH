@@ -13,7 +13,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use usboverssh_core::{Config, DeviceManager, SshTunnel};
+//! use usboverssh::{Config, DeviceManager, SshTunnel};
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
@@ -28,6 +28,7 @@
 //! }
 //! ```
 
+pub mod commands;
 pub mod config;
 pub mod device;
 pub mod error;
@@ -36,6 +37,7 @@ pub mod protocol;
 pub mod server;
 pub mod tunnel;
 
+pub use commands::OutputFormat;
 pub use config::Config;
 pub use device::{glob_match, DeviceFilter, DeviceInfo, DeviceManager, DeviceSpeed};
 pub use error::{Error, Result};
