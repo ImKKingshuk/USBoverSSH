@@ -67,6 +67,10 @@ pub struct App {
     pub last_refresh: Instant,
     /// Refresh interval
     pub refresh_interval: Duration,
+    /// Device pool manager
+    pub pool_manager: Arc<PoolManager>,
+    /// Device list cache
+    pub cache: Arc<DeviceListCache>,
 }
 
 /// Attached device info
@@ -115,6 +119,8 @@ impl App {
             show_status_panel: true,
             last_refresh: Instant::now(),
             refresh_interval,
+            pool_manager: Arc::new(PoolManager::new(config.pool.clone())),
+            cache: Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)),
         }
     }
 
