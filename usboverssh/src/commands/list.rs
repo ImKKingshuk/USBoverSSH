@@ -7,58 +7,6 @@ use anyhow::Result;
 use colored::Colorize;
 use std::sync::Arc;
 
-/// Run the list command
-pub async fn run(
-    host: Option<String>,
-    all: bool,
-    class_filter: Option<String>,
-    config: &Config,
-    format: OutputFormat,
-) -> Result<()> {
-    if let Some(ref host_spec) = host {
-        // Remote listing
-        list_remote(host_spec, all, class_filter, config, format).await
-    } else {
-        // Local listing
-        list_local(all, class_filter, config, format).await
-    }
-}
-
-/// List local USB devices
-async fn list_local(all: bool, class_filter: Option<String>, config: &Config, format: OutputFormat) -> Result<()> {
-    // Use cache if enabled
-    let cache = if config.performance.device_cache_ttl_seconds > 0 {
-        Some(Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)))
-    } else {
-        None
-    };
-
-    let cache_key = cache.as_ref().map(|c| {
-        let filter_str = class_filter.as_deref();
-        DeviceListCache::generate_key("local", filter_str)
-    });
-
-    // Try to get from cache
-    if let Some(ref cache) = cache {
-        if let Some(ref key) = cache_key {
-            if let Some(cached_devices) = cache.get(key).await {
-                return display_devices(&cached_devices, all, class_filter, format);
-            }
-        }
-    }
-
-    // Cache miss or disabled - enumerate devices
-    let mut manager = DeviceManager::new()?;
-    let devices = manager.list_devices()?;
-
-    // Store in cache
-    if let (Some(ref cache), Some(ref key)) = (cache, cache_key) {
-        cache.set(key.clone(), devices.clone(), None).await;
-    }
-
-    display_devices(&devices, all, class_filter, format)
-}
-
 /// Display devices to stdout
 fn display_devices(
     devices: &[crate::DeviceInfo],
@@ -173,6 +121,58 @@ fn display_devices(
     }
 
     Ok(())
+}
+
+/// Run the list command
+pub async fn run(
+    host: Option<String>,
+    all: bool,
+    class_filter: Option<String>,
+    config: &Config,
+    format: OutputFormat,
+) -> Result<()> {
+    if let Some(ref host_spec) = host {
+        // Remote listing
+        list_remote(host_spec, all, class_filter, config, format).await
+    } else {
+        // Local listing
+        list_local(all, class_filter, config, format).await
+    }
+}
+
+/// List local USB devices
+async fn list_local(all: bool, class_filter: Option<String>, config: &Config, format: OutputFormat) -> Result<()> {
+    // Use cache if enabled
+    let cache = if config.performance.device_cache_ttl_seconds > 0 {
+        Some(Arc::new(DeviceListCache::new(config.performance.device_cache_ttl_seconds)))
+    } else {
+        None
+    };
+
+    let cache_key = cache.as_ref().map(|c| {
+        let filter_str = class_filter.as_deref();
+        DeviceListCache::generate_key("local", filter_str)
+    });
+
+    // Try to get from cache
+    if let Some(ref cache) = cache {
+        if let Some(ref key) = cache_key {
+            if let Some(cached_devices) = cache.get(key).await {
+                return display_devices(&cached_devices, all, class_filter, format);
+            }
+        }
+    }
+
+    // Cache miss or disabled - enumerate devices
+    let mut manager = DeviceManager::new()?;
+    let devices = manager.list_devices()?;
+
+    // Store in cache
+    if let (Some(ref cache), Some(ref key)) = (cache, cache_key) {
+        cache.set(key.clone(), devices.clone(), None).await;
+    }
+
+    display_devices(&devices, all, class_filter, format)
 }
 
 /// List remote USB devices via SSH
