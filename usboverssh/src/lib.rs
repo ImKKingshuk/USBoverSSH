@@ -29,6 +29,7 @@
 //! ```
 
 pub mod audit;
+pub mod cache;
 pub mod circuit_breaker;
 pub mod commands;
 pub mod config;
@@ -36,6 +37,7 @@ pub mod connection_pool;
 pub mod device;
 pub mod error;
 pub mod platform;
+pub mod pool;
 pub mod protocol;
 pub mod rate_limit;
 pub mod retry;

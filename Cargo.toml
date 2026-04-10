@@ -52,7 +52,7 @@ thiserror = "2.0"
 anyhow = "1.0"
 
 # Utilities
-uuid = { version = "1.11", features = ["v4"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 once_cell = "1.20"
 regex = "1.11"
@@ -63,6 +63,8 @@ console = "0.15"
 ctrlc = "3.4"
 whoami = "1.5"
 hostname = "0.4"
+bytes = "1.6"
+zstd = "0.13"
 
 # Platform-specific deps are defined in individual crates
 libc = "0.2"

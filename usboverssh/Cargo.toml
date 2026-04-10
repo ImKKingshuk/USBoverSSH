@@ -32,6 +32,8 @@ indicatif = { workspace = true }
 dialoguer = { workspace = true }
 ctrlc = { workspace = true }
 clap = { workspace = true }
+bytes = { workspace = true }
+zstd = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = { workspace = true }

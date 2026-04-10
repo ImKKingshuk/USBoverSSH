@@ -31,6 +31,114 @@ fn validate_file_path(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Device pooling configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PoolConfig {
+    /// Enable device pooling
+    pub enabled: bool,
+    /// Default reservation timeout in seconds
+    pub default_timeout_seconds: u64,
+    /// Maximum concurrent reservations per pool
+    pub max_reservations_per_pool: usize,
+    /// Persistence file path (optional)
+    pub persistence_path: Option<PathBuf>,
+    /// Cleanup interval in seconds
+    pub cleanup_interval_seconds: u64,
+}
+
+impl Default for PoolConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            default_timeout_seconds: 1800, // 30 minutes
+            max_reservations_per_pool: 10,
+            persistence_path: None,
+            cleanup_interval_seconds: 300, // 5 minutes
+        }
+    }
+}
+
+impl PoolConfig {
+    pub fn validate(&self) -> Result<()> {
+        if self.default_timeout_seconds == 0 {
+            return Err(Error::Config(
+                "default_timeout_seconds must be greater than 0".to_string(),
+            ));
+        }
+        if self.default_timeout_seconds > 86400 {
+            return Err(Error::Config(
+                "default_timeout_seconds must be less than 86400 seconds (24 hours)".to_string(),
+            ));
+        }
+        if self.max_reservations_per_pool == 0 {
+            return Err(Error::Config(
+                "max_reservations_per_pool must be greater than 0".to_string(),
+            ));
+        }
+        if self.max_reservations_per_pool > 1000 {
+            return Err(Error::Config(
+                "max_reservations_per_pool must be less than 1000".to_string(),
+            ));
+        }
+        if self.cleanup_interval_seconds == 0 {
+            return Err(Error::Config(
+                "cleanup_interval_seconds must be greater than 0".to_string(),
+            ));
+        }
+        if let Some(ref path) = self.persistence_path {
+            validate_file_path(path)?;
+        }
+        Ok(())
+    }
+}
+
+/// Performance optimization configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PerformanceConfig {
+    /// Device list cache TTL in seconds
+    pub device_cache_ttl_seconds: u64,
+    /// Enable SSH tunnel compression
+    pub ssh_compression_enabled: bool,
+    /// SSH compression level (1-3, 1 = fastest, 3 = best compression)
+    pub ssh_compression_level: u32,
+    /// Enable zero-copy I/O
+    pub zero_copy_enabled: bool,
+}
+
+impl Default for PerformanceConfig {
+    fn default() -> Self {
+        Self {
+            device_cache_ttl_seconds: 30,
+            ssh_compression_enabled: true,
+            ssh_compression_level: 1,
+            zero_copy_enabled: true,
+        }
+    }
+}
+
+impl PerformanceConfig {
+    pub fn validate(&self) -> Result<()> {
+        if self.device_cache_ttl_seconds == 0 {
+            return Err(Error::Config(
+                "device_cache_ttl_seconds must be greater than 0".to_string(),
+            ));
+        }
+        if self.device_cache_ttl_seconds > 3600 {
+            return Err(Error::Config(
+                "device_cache_ttl_seconds must be less than 3600 seconds (1 hour)".to_string(),
+            ));
+        }
+        if self.ssh_compression_level == 0 || self.ssh_compression_level > 3 {
+            return Err(Error::Config(
+                "ssh_compression_level must be between 1 and 3".to_string(),
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// Validate host configuration
 fn validate_host_config(name: &str, host: &HostConfig) -> Result<()> {
     // Validate host name is not empty
@@ -94,6 +202,10 @@ pub struct Config {
     pub logging: LoggingConfig,
     /// TUI settings
     pub tui: TuiConfig,
+    /// Pool settings
+    pub pool: PoolConfig,
+    /// Performance settings
+    pub performance: PerformanceConfig,
     /// Named host configurations
     pub hosts: HashMap<String, HostConfig>,
     /// Auto-attach rules
@@ -175,6 +287,12 @@ impl Config {
 
         // Validate TUI settings
         self.tui.validate()?;
+
+        // Validate pool settings
+        self.pool.validate()?;
+
+        // Validate performance settings
+        self.performance.validate()?;
 
         // Validate all host configurations
         for (name, host) in &self.hosts {
@@ -487,6 +605,8 @@ pub fn generate_example_config() -> String {
         ssh: SshConfig::default(),
         logging: LoggingConfig::default(),
         tui: TuiConfig::default(),
+        pool: PoolConfig::default(),
+        performance: PerformanceConfig::default(),
         hosts: {
             let mut map = HashMap::new();
             map.insert(
