@@ -90,11 +90,6 @@ impl CircuitBreaker {
         }
     }
 
-    /// Create circuit breaker with default config
-    pub fn default() -> Self {
-        Self::new(CircuitBreakerConfig::default())
-    }
-
     /// Create circuit breaker for SSH connections
     pub fn for_ssh() -> Self {
         Self::new(CircuitBreakerConfig::for_ssh())
