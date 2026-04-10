@@ -7,6 +7,50 @@ use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_opcode_to_u16() {
+        assert_eq!(OpCode::ReqDevlist.to_u16(), 0x8005);
+        assert_eq!(OpCode::RepDevlist.to_u16(), 0x0005);
+        assert_eq!(OpCode::ReqImport.to_u16(), 0x8003);
+        assert_eq!(OpCode::RepImport.to_u16(), 0x0003);
+    }
+
+    #[test]
+    fn test_opcode_from_u16() {
+        assert_eq!(OpCode::from_u16(0x8005), Some(OpCode::ReqDevlist));
+        assert_eq!(OpCode::from_u16(0x0005), Some(OpCode::RepDevlist));
+        assert_eq!(OpCode::from_u16(0x8003), Some(OpCode::ReqImport));
+        assert_eq!(OpCode::from_u16(0x9999), None);
+    }
+
+    #[test]
+    fn test_header_request() {
+        let header = UsbIpHeader::request(OpCode::ReqDevlist);
+        assert_eq!(header.version, USBIP_VERSION);
+        assert_eq!(header.code, OpCode::ReqDevlist.to_u16());
+        assert_eq!(header.status, 0);
+    }
+
+    #[test]
+    fn test_header_reply() {
+        let header = UsbIpHeader::reply(OpCode::RepDevlist, 0);
+        assert_eq!(header.version, USBIP_VERSION);
+        assert_eq!(header.code, OpCode::RepDevlist.to_u16());
+        assert_eq!(header.status, 0);
+    }
+
+    #[test]
+    fn test_device_status() {
+        assert_eq!(DeviceStatus::Available as u32, 1);
+        assert_eq!(DeviceStatus::Used as u32, 2);
+        assert_eq!(DeviceStatus::Error as u32, 3);
+    }
+}
+
 /// USB/IP protocol version
 pub const USBIP_VERSION: u16 = 0x0111;
 

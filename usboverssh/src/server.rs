@@ -9,6 +9,7 @@ use crate::rate_limit::RateLimiter;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, UnixListener, UnixStream};
+use tokio::signal;
 use tokio::sync::{broadcast, Mutex};
 use tracing::{debug, error, info, warn};
 
@@ -94,15 +95,15 @@ impl Server {
 
     /// Start the server
     pub async fn run(&self) -> Result<()> {
+        let mut handles = Vec::new();
+
         // Load required kernel modules on Linux
         #[cfg(target_os = "linux")]
         {
             crate::platform::load_kernel_modules(true)?;
         }
 
-        let mut handles = Vec::new();
-
-        // Start TCP listener if configured
+        // TCP listener
         if let Some(ref addr) = self.config.listen_addr {
             let bind_addr = format!("{}:{}", addr, self.config.listen_port);
             let listener = TcpListener::bind(&bind_addr)
@@ -184,18 +185,16 @@ impl Server {
             }));
         }
 
-        // Start Unix socket listener if configured
-        if let Some(ref socket_path) = self.config.unix_socket {
-            // Remove existing socket
-            let _ = std::fs::remove_file(socket_path);
+        // Unix socket listener
+        if let Some(ref path) = self.config.unix_socket {
+            let listener = UnixListener::bind(path)
+                .map_err(|e| Error::ServerBindFailed(format!("{}: {}", path, e)))?;
 
-            let listener = UnixListener::bind(socket_path)
-                .map_err(|e| Error::ServerBindFailed(format!("{}: {}", socket_path, e)))?;
-
-            info!("USB/IP server listening on {}", socket_path);
+            info!("USB/IP server listening on unix socket {}", path);
 
             let device_manager = Arc::clone(&self.device_manager);
             let config = self.config.clone();
+            let active_connections = Arc::clone(&self.active_connections);
             let mut shutdown_rx = self.shutdown_tx.subscribe();
 
             handles.push(tokio::spawn(async move {
@@ -203,12 +202,32 @@ impl Server {
                     tokio::select! {
                         result = listener.accept() => {
                             match result {
-                                Ok((stream, _)) => {
-                                    info!("New Unix socket connection");
+                                Ok((stream, _addr)) => {
+                                    let client_id = format!("unix-{}", std::process::id());
+
+                                    // Check connection limit
+                                    let conn_count = {
+                                        let conns = active_connections.lock().await;
+                                        conns.len()
+                                    };
+
+                                    if conn_count >= config.max_connections {
+                                        warn!("Connection rejected: max connections reached");
+                                        let _ = stream.shutdown();
+                                        continue;
+                                    }
+
                                     let dm = Arc::clone(&device_manager);
                                     let cfg = config.clone();
+                                    let active_conns = Arc::clone(&active_connections);
+
                                     tokio::spawn(async move {
-                                        if let Err(e) = handle_unix_client(stream, dm, cfg).await {
+                                        let result = handle_unix_client(stream, dm, cfg).await;
+                                        {
+                                            let mut conns = active_conns.lock().await;
+                                            conns.remove(&client_id);
+                                        }
+                                        if let Err(e) = result {
                                             error!("Client error: {}", e);
                                         }
                                     });
@@ -219,7 +238,7 @@ impl Server {
                             }
                         }
                         _ = shutdown_rx.recv() => {
-                            info!("Unix server shutting down");
+                            info!("Unix socket server shutting down");
                             break;
                         }
                     }
@@ -227,11 +246,53 @@ impl Server {
             }));
         }
 
-        // Wait for all listeners
-        for handle in handles {
-            let _ = handle.await;
+        // Wait for shutdown signal
+        tokio::select! {
+            _ = signal::ctrl_c() => {
+                info!("Received Ctrl+C, initiating graceful shutdown");
+            }
+            _ = signal::unix(signal::unix::SignalKind::terminate()) => {
+                info!("Received SIGTERM, initiating graceful shutdown");
+            }
+            _ = signal::unix(signal::unix::SignalKind::interrupt()) => {
+                info!("Received SIGINT, initiating graceful shutdown");
+            }
         }
 
+        // Send shutdown signal to all listeners
+        info!("Sending shutdown signal to all listeners");
+        let _ = self.shutdown_tx.send(());
+
+        // Wait for all handlers to finish
+        info!("Waiting for all connections to close");
+        let conn_count = {
+            let conns = self.active_connections.lock().await;
+            conns.len()
+        };
+
+        if conn_count > 0 {
+            info!("Waiting for {} active connection(s) to close...", conn_count);
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        }
+
+        // Abort remaining handlers
+        for handle in handles {
+            handle.abort();
+        }
+
+        info!("Server shutdown complete");
+        Ok(())
+    }
+
+    /// Gracefully shutdown the server
+    pub async fn shutdown(&self) -> Result<()> {
+        info!("Initiating graceful shutdown");
+        let _ = self.shutdown_tx.send(());
+
+        // Wait for connections to close
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+        info!("Graceful shutdown complete");
         Ok(())
     }
 

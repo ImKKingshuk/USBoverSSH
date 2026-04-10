@@ -345,7 +345,7 @@ impl App {
         };
 
         if response.contains("RESPONSE") {
-            self.set_status(format!("Device {} attached successfully!", device.bus_id));
+            self.set_status(format!("Device {} attached successfully!", bus_id));
 
             // Add to attached devices
             #[cfg(target_os = "linux")]
@@ -373,12 +373,12 @@ impl App {
                                     let port: u32 = parts[1].parse().unwrap_or(0);
                                     let status: u32 = parts[2].parse().unwrap_or(0);
                                     let speed: u32 = parts[3].parse().unwrap_or(0);
-                                    let bus_id = parts[6];
+                                    let remote_bus_id = parts[6];
 
-                                    if status == 6 && bus_id == device.bus_id {
+                                    if status == 6 && remote_bus_id == bus_id {
                                         self.attached_devices.push(AttachedDevice {
                                             port,
-                                            bus_id: bus_id.to_string(),
+                                            bus_id: remote_bus_id.to_string(),
                                             host: host_name.clone(),
                                             speed: speed.to_string(),
                                         });
@@ -455,8 +455,88 @@ impl App {
 
     /// Connect to all hosts in config
     pub async fn connect_all_hosts(&mut self) {
-        for host in &mut self.hosts {
-            host.connected = false; // Would actually connect
+        use usboverssh::{TunnelConfig, SshSession};
+
+        // Clone host configs before the loop to avoid borrow checker issues
+        let host_configs: Vec<(String, Option<usboverssh::config::HostConfig>)> = self.hosts
+            .iter()
+            .map(|h| (h.name.clone(), self.config.hosts.get(&h.name).cloned()))
+            .collect();
+
+        let mut updates = Vec::new();
+
+        for (i, (host_name, host_config)) in host_configs.iter().enumerate() {
+            let host_config = match host_config {
+                Some(h) => h.clone(),
+                None => {
+                    updates.push((i, false, format!("Host {} not found in config", host_name), None));
+                    continue;
+                }
+            };
+
+            let tunnel_config = TunnelConfig::new(host_config);
+            let mut session = SshSession::new(tunnel_config);
+
+            match session.connect().await {
+                Ok(_) => {
+                    // List devices from this host
+                    let devices = match session.exec("usboverssh list").await {
+                        Ok(output) => {
+                            // Parse device list
+                            Some(output
+                                .lines()
+                                .filter(|line| !line.is_empty() && !line.starts_with("Bus"))
+                                .filter_map(|line| {
+                                    let parts: Vec<&str> = line.split_whitespace().collect();
+                                    if parts.len() >= 6 {
+                                        Some(usboverssh::DeviceInfo {
+                                            bus_id: parts[0].to_string(),
+                                            vendor_id: u16::from_str_radix(parts[1].trim_start_matches("0x"), 16).unwrap_or(0),
+                                            product_id: u16::from_str_radix(parts[2].trim_start_matches("0x"), 16).unwrap_or(0),
+                                            device_class: usboverssh::device::DeviceClass::Unknown(0),
+                                            bus_num: 0,
+                                            dev_num: 0,
+                                            speed: usboverssh::device::DeviceSpeed::High,
+                                            manufacturer: Some(parts[3].to_string()),
+                                            product: Some(parts[4].to_string()),
+                                            serial: None,
+                                            num_configurations: 1,
+                                            is_attached: false,
+                                            is_bound: false,
+                                        })
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect())
+                        }
+                        Err(e) => {
+                            updates.push((i, true, format!("Connected to {}", host_name), None));
+                            updates.push((i, true, format!("Failed to list devices from {}: {}", host_name, e), None));
+                            None
+                        }
+                    };
+
+                    let _ = session.disconnect().await;
+                    updates.push((i, true, format!("Connected to {}", host_name), devices));
+                }
+                Err(e) => {
+                    updates.push((i, false, format!("Failed to connect to {}: {}", host_name, e), None));
+                }
+            }
+        }
+
+        // Apply updates
+        for (i, connected, status, devices) in updates {
+            if let Some(host) = self.hosts.get_mut(i) {
+                host.connected = connected;
+            }
+            self.set_status(status);
+            if let Some(devs) = devices {
+                if let Some(host) = self.hosts.get(i) {
+                    self.remote_devices.insert(host.name.clone(), devs);
+                }
+            }
         }
     }
 
