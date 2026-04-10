@@ -33,12 +33,14 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 /// Render header with tabs
 fn render_header(frame: &mut Frame, app: &App, area: Rect) {
-    let titles = vec!["Local Devices", "Remote Devices", "Attached", "Hosts"];
+    let titles = vec!["Local Devices", "Remote Devices", "Attached", "Hosts", "Pool Status", "Cache Status"];
     let selected = match app.active_pane {
         Pane::LocalDevices => 0,
         Pane::RemoteDevices => 1,
         Pane::AttachedDevices => 2,
         Pane::Hosts => 3,
+        Pane::PoolStatus => 4,
+        Pane::CacheStatus => 5,
     };
 
     let tabs = Tabs::new(titles)
@@ -68,6 +70,8 @@ fn render_main(frame: &mut Frame, app: &App, area: Rect) {
         Pane::RemoteDevices => render_remote_devices(frame, app, area),
         Pane::AttachedDevices => render_attached_devices(frame, app, area),
         Pane::Hosts => render_hosts(frame, app, area),
+        Pane::PoolStatus => render_pool_status(frame, app, area),
+        Pane::CacheStatus => render_cache_status(frame, app, area),
     }
 }
 
