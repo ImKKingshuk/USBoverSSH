@@ -295,8 +295,12 @@ async fn main() -> Result<()> {
                 let lib_action = match action {
                     ConfigAction::Show => usboverssh::commands::ConfigAction::Show,
                     ConfigAction::Path => usboverssh::commands::ConfigAction::Path,
-                    ConfigAction::Init { force } => usboverssh::commands::ConfigAction::Init { force },
-                    ConfigAction::AddHost { name, spec } => usboverssh::commands::ConfigAction::AddHost { name, spec },
+                    ConfigAction::Init { force } => {
+                        usboverssh::commands::ConfigAction::Init { force }
+                    }
+                    ConfigAction::AddHost { name, spec } => {
+                        usboverssh::commands::ConfigAction::AddHost { name, spec }
+                    }
                 };
                 usboverssh::commands::config::run(lib_action, &config, cli.quiet).await
             }

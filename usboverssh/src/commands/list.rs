@@ -1,9 +1,9 @@
 //! List USB devices command
 
 use crate::OutputFormat;
+use crate::{Config, DeviceManager};
 use anyhow::Result;
 use colored::Colorize;
-use crate::{Config, DeviceManager};
 
 /// Run the list command
 pub async fn run(

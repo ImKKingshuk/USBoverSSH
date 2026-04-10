@@ -353,7 +353,10 @@ impl russh::client::Handler for ClientHandler {
 
             // Unknown host key
             if self.strict_host_key_checking {
-                tracing::warn!("Unknown host key for {} (strict checking enabled)", self.hostname);
+                tracing::warn!(
+                    "Unknown host key for {} (strict checking enabled)",
+                    self.hostname
+                );
                 return Err(russh::Error::Disconnect);
             } else {
                 // In non-strict mode, add to known_hosts
@@ -364,7 +367,10 @@ impl russh::client::Handler for ClientHandler {
         }
 
         // No known_hosts configured - accept all (like StrictHostKeyChecking=no)
-        tracing::warn!("No known_hosts configured, accepting host key for {}", self.hostname);
+        tracing::warn!(
+            "No known_hosts configured, accepting host key for {}",
+            self.hostname
+        );
         Ok(true)
     }
 }
@@ -480,13 +486,13 @@ impl KnownHosts {
         let mut entries = std::collections::HashMap::new();
 
         if path.exists() {
-            let file = std::fs::File::open(&path).map_err(|e| {
-                Error::Config(format!("Failed to open known_hosts: {}", e))
-            })?;
+            let file = std::fs::File::open(&path)
+                .map_err(|e| Error::Config(format!("Failed to open known_hosts: {}", e)))?;
 
             let reader = std::io::BufReader::new(file);
             for line in reader.lines() {
-                let line = line.map_err(|e| Error::Config(format!("Failed to read known_hosts: {}", e)))?;
+                let line =
+                    line.map_err(|e| Error::Config(format!("Failed to read known_hosts: {}", e)))?;
                 let line = line.trim();
 
                 // Skip comments and empty lines

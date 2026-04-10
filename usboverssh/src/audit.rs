@@ -39,10 +39,7 @@ pub enum AuditEvent {
         persistent: bool,
     },
     /// Device detached
-    DeviceDetach {
-        device: String,
-        host: String,
-    },
+    DeviceDetach { device: String, host: String },
     /// SSH connection established
     SshConnect {
         host: String,
@@ -56,26 +53,15 @@ pub enum AuditEvent {
         reason: String,
     },
     /// SSH connection closed
-    SshDisconnect {
-        host: String,
-        duration_secs: u64,
-    },
+    SshDisconnect { host: String, duration_secs: u64 },
     /// USB/IP server started
-    ServerStart {
-        address: String,
-        port: u16,
-    },
+    ServerStart { address: String, port: u16 },
     /// USB/IP server stopped
     ServerStop,
     /// Configuration loaded
-    ConfigLoad {
-        path: String,
-    },
+    ConfigLoad { path: String },
     /// Configuration modified
-    ConfigModify {
-        path: String,
-        changes: Vec<String>,
-    },
+    ConfigModify { path: String, changes: Vec<String> },
     /// Authentication attempt
     AuthAttempt {
         user: String,
@@ -83,10 +69,7 @@ pub enum AuditEvent {
         method: String,
     },
     /// Rate limit exceeded
-    RateLimitExceeded {
-        client: String,
-        endpoint: String,
-    },
+    RateLimitExceeded { client: String, endpoint: String },
 }
 
 /// Audit logger configuration
@@ -136,13 +119,12 @@ impl AuditLogger {
 
     /// Create with default config
     pub fn with_defaults() -> Result<Self> {
-        Ok(Self::new(AuditConfig::default())?)
+        Self::new(AuditConfig::default())
     }
 
     /// Log an audit entry
     pub fn log(&self, entry: AuditEntry) -> Result<()> {
         self.rotate_if_needed()?;
-
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -161,12 +143,7 @@ impl AuditLogger {
     }
 
     /// Log device attach event
-    pub fn log_device_attach(
-        &self,
-        device: String,
-        host: String,
-        persistent: bool,
-    ) -> Result<()> {
+    pub fn log_device_attach(&self, device: String, host: String, persistent: bool) -> Result<()> {
         let entry = AuditEntry {
             timestamp: Utc::now(),
             event: AuditEvent::DeviceAttach {
@@ -199,12 +176,7 @@ impl AuditLogger {
     }
 
     /// Log SSH connect event
-    pub fn log_ssh_connect(
-        &self,
-        host: String,
-        user: String,
-        method: String,
-    ) -> Result<()> {
+    pub fn log_ssh_connect(&self, host: String, user: String, method: String) -> Result<()> {
         let entry = AuditEntry {
             timestamp: Utc::now(),
             event: AuditEvent::SshConnect {
@@ -221,12 +193,7 @@ impl AuditLogger {
     }
 
     /// Log SSH connect failed event
-    pub fn log_ssh_connect_failed(
-        &self,
-        host: String,
-        user: String,
-        reason: String,
-    ) -> Result<()> {
+    pub fn log_ssh_connect_failed(&self, host: String, user: String, reason: String) -> Result<()> {
         let entry = AuditEntry {
             timestamp: Utc::now(),
             event: AuditEvent::SshConnectFailed {
@@ -278,7 +245,11 @@ impl AuditLogger {
     fn rotate_logs(&self) -> Result<()> {
         // Remove oldest log if we have too many
         if self.config.max_files > 0 {
-            let oldest = format!("{}.{}", self.config.log_path.display(), self.config.max_files);
+            let oldest = format!(
+                "{}.{}",
+                self.config.log_path.display(),
+                self.config.max_files
+            );
             if Path::new(&oldest).exists() {
                 std::fs::remove_file(&oldest)?;
             }
@@ -308,7 +279,9 @@ static GLOBAL_LOGGER: OnceLock<AuditLogger> = OnceLock::new();
 /// Initialize global audit logger
 pub fn init_global_logger(config: AuditConfig) -> Result<()> {
     let logger = AuditLogger::new(config)?;
-    GLOBAL_LOGGER.set(logger).expect("Failed to set global logger");
+    GLOBAL_LOGGER
+        .set(logger)
+        .expect("Failed to set global logger");
     info!("Audit logger initialized");
     Ok(())
 }

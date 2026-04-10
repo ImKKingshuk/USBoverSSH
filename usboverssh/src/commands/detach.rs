@@ -1,8 +1,8 @@
 //! Detach USB device command
 
+use crate::Config;
 use anyhow::Result;
 use colored::Colorize;
-use crate::Config;
 
 /// Run the detach command
 pub async fn run(device_pattern: String, _config: &Config) -> Result<()> {

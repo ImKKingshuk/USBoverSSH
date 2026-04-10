@@ -1,8 +1,8 @@
 // Unit tests for rate limiting
 
-use usboverssh::rate_limit::{TokenBucket, RateLimiter, SimpleRateLimiter};
 use std::thread;
 use std::time::Duration;
+use usboverssh::rate_limit::{RateLimiter, SimpleRateLimiter, TokenBucket};
 
 #[test]
 fn test_token_bucket_basic() {

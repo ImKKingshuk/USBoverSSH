@@ -1,10 +1,10 @@
 //! Attach USB device command
 
+use crate::{Config, SshSession, TunnelConfig};
 use anyhow::Result;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
-use crate::{Config, SshSession, TunnelConfig};
 
 /// Run the attach command
 pub async fn run(
@@ -112,9 +112,7 @@ async fn attempt_attach(
     let bus_id = bus_id.trim();
 
     if bus_id.is_empty() {
-        return Err(crate::Error::DeviceNotFound(
-            device_pattern.to_string(),
-        ));
+        return Err(crate::Error::DeviceNotFound(device_pattern.to_string()));
     }
 
     pb.set_message(format!("Found device: {}", bus_id));

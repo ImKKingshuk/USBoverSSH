@@ -1,7 +1,9 @@
 // Unit tests for USB/IP protocol
 
-use usboverssh::protocol::{DeviceStatus, OpCode, USBIP_VERSION, UsbIpDeviceDescriptor, UsbIpHeader};
-use usboverssh::device::{DeviceClass, DeviceSpeed, DeviceInfo};
+use usboverssh::device::{DeviceClass, DeviceInfo, DeviceSpeed};
+use usboverssh::protocol::{
+    DeviceStatus, OpCode, UsbIpDeviceDescriptor, UsbIpHeader, USBIP_VERSION,
+};
 
 #[test]
 fn test_header_serialization() {
@@ -10,7 +12,7 @@ fn test_header_serialization() {
     let parsed = UsbIpHeader::from_bytes(&bytes);
 
     assert_eq!(parsed.version, USBIP_VERSION);
-    assert_eq!(parsed.code, OpCode::ReqDevlist as u16);
+    assert_eq!(parsed.code, OpCode::ReqDevlist.to_u16());
 }
 
 #[test]

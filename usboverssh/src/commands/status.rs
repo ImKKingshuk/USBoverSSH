@@ -1,10 +1,10 @@
 //! Status command - show attached devices
 
+use crate::Config;
 use crate::OutputFormat;
 use anyhow::Result;
 use colored::Colorize;
 use serde::Serialize;
-use crate::Config;
 
 #[derive(Debug, Serialize)]
 struct AttachedDevice {

@@ -134,7 +134,7 @@ impl Server {
                                     if conn_count >= config.max_connections {
                                         warn!("Connection rejected: max connections reached ({})", config.max_connections);
                                         let mut stream = stream;
-                                        let _ = stream.shutdown();
+                                        let _ = stream.shutdown().await;
                                         continue;
                                     }
 
@@ -143,7 +143,7 @@ impl Server {
                                         if !limiter.check(&client_id).await {
                                             warn!("Connection rejected: rate limited for {}", client_id);
                                             let mut stream = stream;
-                                            let _ = stream.shutdown();
+                                            let _ = stream.shutdown().await;
                                             continue;
                                         }
                                     }
@@ -214,7 +214,7 @@ impl Server {
                                     if conn_count >= config.max_connections {
                                         warn!("Connection rejected: max connections reached");
                                         let mut stream = stream;
-                                        let _ = stream.shutdown();
+                                        let _ = stream.shutdown().await;
                                         continue;
                                     }
 
@@ -284,7 +284,10 @@ impl Server {
         };
 
         if conn_count > 0 {
-            info!("Waiting for {} active connection(s) to close...", conn_count);
+            info!(
+                "Waiting for {} active connection(s) to close...",
+                conn_count
+            );
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         }
 

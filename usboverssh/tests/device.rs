@@ -1,6 +1,6 @@
 // Unit tests for device management
 
-use usboverssh::device::{DeviceFilter, DeviceManager, DeviceSpeed, DeviceClass, DeviceInfo, glob_match};
+use usboverssh::device::{glob_match, DeviceClass, DeviceFilter, DeviceInfo, DeviceSpeed};
 
 #[test]
 fn test_filter_parse_bus_id() {

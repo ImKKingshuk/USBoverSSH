@@ -322,7 +322,7 @@ impl App {
         };
 
         // Create SSH session
-        use usboverssh::{TunnelConfig, SshSession};
+        use usboverssh::{SshSession, TunnelConfig};
         let tunnel_config = TunnelConfig::new(host_config);
         let mut session = SshSession::new(tunnel_config);
 
@@ -455,10 +455,11 @@ impl App {
 
     /// Connect to all hosts in config
     pub async fn connect_all_hosts(&mut self) {
-        use usboverssh::{TunnelConfig, SshSession};
+        use usboverssh::{SshSession, TunnelConfig};
 
         // Clone host configs before the loop to avoid borrow checker issues
-        let host_configs: Vec<(String, Option<usboverssh::config::HostConfig>)> = self.hosts
+        let host_configs: Vec<(String, Option<usboverssh::config::HostConfig>)> = self
+            .hosts
             .iter()
             .map(|h| (h.name.clone(), self.config.hosts.get(&h.name).cloned()))
             .collect();
@@ -469,7 +470,12 @@ impl App {
             let host_config = match host_config {
                 Some(h) => h.clone(),
                 None => {
-                    updates.push((i, false, format!("Host {} not found in config", host_name), None));
+                    updates.push((
+                        i,
+                        false,
+                        format!("Host {} not found in config", host_name),
+                        None,
+                    ));
                     continue;
                 }
             };
@@ -483,36 +489,52 @@ impl App {
                     let devices = match session.exec("usboverssh list").await {
                         Ok(output) => {
                             // Parse device list
-                            Some(output
-                                .lines()
-                                .filter(|line| !line.is_empty() && !line.starts_with("Bus"))
-                                .filter_map(|line| {
-                                    let parts: Vec<&str> = line.split_whitespace().collect();
-                                    if parts.len() >= 6 {
-                                        Some(usboverssh::DeviceInfo {
-                                            bus_id: parts[0].to_string(),
-                                            vendor_id: u16::from_str_radix(parts[1].trim_start_matches("0x"), 16).unwrap_or(0),
-                                            product_id: u16::from_str_radix(parts[2].trim_start_matches("0x"), 16).unwrap_or(0),
-                                            device_class: usboverssh::device::DeviceClass::Unknown(0),
-                                            bus_num: 0,
-                                            dev_num: 0,
-                                            speed: usboverssh::device::DeviceSpeed::High,
-                                            manufacturer: Some(parts[3].to_string()),
-                                            product: Some(parts[4].to_string()),
-                                            serial: None,
-                                            num_configurations: 1,
-                                            is_attached: false,
-                                            is_bound: false,
-                                        })
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .collect())
+                            Some(
+                                output
+                                    .lines()
+                                    .filter(|line| !line.is_empty() && !line.starts_with("Bus"))
+                                    .filter_map(|line| {
+                                        let parts: Vec<&str> = line.split_whitespace().collect();
+                                        if parts.len() >= 6 {
+                                            Some(usboverssh::DeviceInfo {
+                                                bus_id: parts[0].to_string(),
+                                                vendor_id: u16::from_str_radix(
+                                                    parts[1].trim_start_matches("0x"),
+                                                    16,
+                                                )
+                                                .unwrap_or(0),
+                                                product_id: u16::from_str_radix(
+                                                    parts[2].trim_start_matches("0x"),
+                                                    16,
+                                                )
+                                                .unwrap_or(0),
+                                                device_class:
+                                                    usboverssh::device::DeviceClass::Unknown(0),
+                                                bus_num: 0,
+                                                dev_num: 0,
+                                                speed: usboverssh::device::DeviceSpeed::High,
+                                                manufacturer: Some(parts[3].to_string()),
+                                                product: Some(parts[4].to_string()),
+                                                serial: None,
+                                                num_configurations: 1,
+                                                is_attached: false,
+                                                is_bound: false,
+                                            })
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect(),
+                            )
                         }
                         Err(e) => {
                             updates.push((i, true, format!("Connected to {}", host_name), None));
-                            updates.push((i, true, format!("Failed to list devices from {}: {}", host_name, e), None));
+                            updates.push((
+                                i,
+                                true,
+                                format!("Failed to list devices from {}: {}", host_name, e),
+                                None,
+                            ));
                             None
                         }
                     };
@@ -521,7 +543,12 @@ impl App {
                     updates.push((i, true, format!("Connected to {}", host_name), devices));
                 }
                 Err(e) => {
-                    updates.push((i, false, format!("Failed to connect to {}: {}", host_name, e), None));
+                    updates.push((
+                        i,
+                        false,
+                        format!("Failed to connect to {}: {}", host_name, e),
+                        None,
+                    ));
                 }
             }
         }

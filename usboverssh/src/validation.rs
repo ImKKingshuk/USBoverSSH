@@ -67,7 +67,9 @@ pub fn validate_device_pattern(pattern: &str) -> Result<()> {
 /// Validate host specification (user@host[:port])
 pub fn validate_host_spec(spec: &str) -> Result<()> {
     if spec.is_empty() {
-        return Err(Error::Config("Host specification cannot be empty".to_string()));
+        return Err(Error::Config(
+            "Host specification cannot be empty".to_string(),
+        ));
     }
 
     if !host_spec_re().is_match(spec) {
@@ -180,13 +182,15 @@ pub fn validate_username(username: &str) -> Result<()> {
     }
 
     if username.len() > 32 {
-        return Err(Error::Config("Username too long (max 32 characters)".to_string()));
+        return Err(Error::Config(
+            "Username too long (max 32 characters)".to_string(),
+        ));
     }
 
     // Allow alphanumeric, underscore, hyphen, dot
-    let valid = username.chars().all(|c| {
-        c.is_alphanumeric() || c == '_' || c == '-' || c == '.'
-    });
+    let valid = username
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.');
 
     if !valid {
         return Err(Error::Config(format!(

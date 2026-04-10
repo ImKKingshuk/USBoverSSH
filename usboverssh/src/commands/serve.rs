@@ -1,8 +1,8 @@
 //! USB/IP Server command
 
+use crate::{Config, DeviceFilter};
 use anyhow::Result;
 use colored::Colorize;
-use crate::{Config, DeviceFilter};
 
 /// Run the serve command
 pub async fn run(
