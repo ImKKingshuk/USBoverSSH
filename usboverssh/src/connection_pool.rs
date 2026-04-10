@@ -95,10 +95,18 @@ impl ConnectionPool {
     }
 
     /// Create connection pool with default config
-    pub fn default() -> Self {
+    pub fn new_default() -> Self {
         Self::new(ConnectionPoolConfig::default())
     }
+}
 
+impl Default for ConnectionPool {
+    fn default() -> Self {
+        Self::new(ConnectionPoolConfig::default())
+    }
+}
+
+impl ConnectionPool {
     /// Generate connection key from host config
     pub fn key_from_host(host: &HostConfig) -> String {
         format!("{}@{}:{}", host.user, host.hostname, host.port)

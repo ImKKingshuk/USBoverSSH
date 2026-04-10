@@ -38,7 +38,8 @@ fn test_host_config_parse() {
 
     let config = HostConfig::parse("user@host:2222");
     assert_eq!(config.port, 2222);
-    assert_eq!(config.hostname, "user@host");
+    assert_eq!(config.user, "user");
+    assert_eq!(config.hostname, "host");
 }
 
 #[test]

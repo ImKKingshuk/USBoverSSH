@@ -16,9 +16,9 @@ async fn test_retry_with_backoff_success() {
     let result = retry_with_backoff(config, || {
         let count = Arc::clone(&attempts);
         async move {
-            let current = *count.lock().await;
             *count.lock().await += 1;
-            if current < 2 {
+            let current = *count.lock().await;
+            if current <= 2 {
                 Err(Error::Other("connection failed".to_string()))
             } else {
                 Ok::<_, Error>(42)
@@ -29,7 +29,7 @@ async fn test_retry_with_backoff_success() {
 
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 42);
-    assert_eq!(*attempts.lock().await, 2);
+    assert_eq!(*attempts.lock().await, 3);
 }
 
 #[tokio::test]

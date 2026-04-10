@@ -104,7 +104,15 @@ impl CircuitBreaker {
     pub fn for_usbip() -> Self {
         Self::new(CircuitBreakerConfig::for_usbip())
     }
+}
 
+impl Default for CircuitBreaker {
+    fn default() -> Self {
+        Self::new(CircuitBreakerConfig::default())
+    }
+}
+
+impl CircuitBreaker {
     /// Get current state
     pub async fn state(&self) -> CircuitBreakerState {
         *self.state.lock().await
@@ -162,8 +170,12 @@ impl CircuitBreaker {
 
     /// Handle successful operation
     async fn on_success(&self) {
-        let state = self.state.lock().await;
-        if *state == CircuitBreakerState::HalfOpen {
+        let state = {
+            let state = self.state.lock().await;
+            *state
+        };
+
+        if state == CircuitBreakerState::HalfOpen {
             let successes = self.success_count.fetch_add(1, Ordering::Relaxed) + 1;
 
             if successes >= self.config.success_threshold {
