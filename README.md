@@ -43,21 +43,12 @@ usboverssh
 ```bash
 # List local USB devices
 usboverssh list
-
-# List remote USB devices
-usboverssh list [email protected]
-
-# Attach a remote device
-usboverssh attach [email protected] 0xXXXX:0xXXXX
-
-# Show attached devices
-usboverssh status
 ```
 
 ## Product Priority
 
 - **TUI is the main product and default experience.** Use `usboverssh` for day-to-day device management, host connections, and operator-guided operations.
-- **CLI is the secondary surface.** Use `usboverssh list`, `attach`, `detach`, and other commands for quick one-off tasks, scripting, and automation.
+- **CLI is the secondary surface.** Use `usboverssh list`, `attach`, `detach`, and other commands for quick one-off tasks, automation.
 
 ### TUI Keybindings
 
@@ -75,34 +66,9 @@ usboverssh status
 | Toggle status panel | s |
 | Help | ? or F1 |
 
-## Current Capabilities (v1.0.0)
-
-### Core Platform
-
-- ✅ Rust CLI with subcommands: list, attach, detach, status, serve, tui, config, completions
-- 🔧 Full-screen TUI by default (`usboverssh`) as the primary product surface
-- ✅ Async SSH communication with russh library
-- ✅ Configuration management via TOML
-- ✅ Structured logging with tracing
-- ✅ Error handling with comprehensive error types
-
-### Rust Core
-
-- ✅ Cross-platform USB device enumeration (Linux: sysfs, macOS/Windows: nusb)
-- ✅ SSH tunneling with key-based authentication
-- ✅ USB/IP protocol implementation (server-side for Linux)
-- ✅ Device filtering (bus ID, VID:PID, serial, product name, device class)
-- ✅ Device manager with find and filter operations
-- ✅ Configuration with named hosts and auto-attach rules
-- ✅ Persistent connections with auto-reconnect
-- ✅ Daemon mode for background operation
-- ✅ Kernel module management (Linux: usbip-host, vhci-hcd)
-- ✅ VHCI attachment/detachment (Linux only)
-- ✅ Shell completion generation
-
 ---
 
-## Feature Matrix
+## Features
 
 ### Device Management
 
@@ -128,8 +94,8 @@ usboverssh status
 
 ### SSH Tunneling
 
-- ✅ SSH connection establishment with russh
-- ✅ Key-based authentication (ed25519, rsa, ecdsa)
+- ✅ SSH connection establishment
+- ✅ Key-based authentication
 - ✅ Remote command execution
 - ✅ Unix socket forwarding
 - ✅ Connection state management
@@ -173,28 +139,10 @@ usboverssh status
 ## Requirements
 
 - **OS**: macOS, Linux, Windows
-- **Rust**: 1.75+ (for building from source)
 - **Linux Server**: Kernel with USB/IP support (usbip-core, usbip-host modules)
 - **Linux Client**: Kernel with VHCI support (vhci-hcd module)
 - **macOS/Windows**: No special requirements (client only)
-- **SSH**: SSH key for authentication (recommended)
-
-## Configuration
-
-USBoverSSH stores configuration in the platform-appropriate data directory:
-
-- **Linux**: `~/.config/usboverssh/config.toml`
-- **macOS**: `~/Library/Application Support/usboverssh/config.toml`
-- **Windows**: `%APPDATA%\usboverssh\config.toml`
-
-Configuration includes:
-
-- Named host configurations (hostname, port, user, identity file, device filters)
-- SSH settings (default port, identity file, config file, agent forwarding, keepalive)
-- General settings (reconnect delay, max reconnect attempts, connection timeout)
-- Logging settings (level, format, file, color)
-- TUI settings (refresh interval, mouse, theme, show serial/speed)
-- Auto-attach rules (device filters, target host, enabled status)
+- **SSH**
 
 ## Platform Support
 

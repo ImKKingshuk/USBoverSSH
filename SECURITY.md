@@ -27,8 +27,8 @@ USBoverSSH requires SSH access to function:
 The following sensitive data types are automatically excluded via `.gitignore`:
 
 1. **Credentials & Keys**
-   - Private keys (*.pem, *.key, id_rsa, id_ed25519, etc.)
-   - Certificates (*.crt, *.cer, *.p12, *.pfx)
+   - Private keys (*.pem,*.key, id_rsa, id_ed25519, etc.)
+   - Certificates (*.crt,*.cer, *.p12,*.pfx)
    - SSH known_hosts files
    - Environment files (.env, .env.*)
    - API key files (secrets.json, credentials.json)
@@ -38,11 +38,6 @@ The following sensitive data types are automatically excluded via `.gitignore`:
    - SSH config files with sensitive information
    - Configuration files with passwords or tokens
 
-3. **Build & Runtime Artifacts**
-   - Rust build artifacts (target/)
-   - Configuration files with user data
-   - Log files with sensitive information
-
 ### Security Scanning
 
 This repository uses:
@@ -50,13 +45,6 @@ This repository uses:
 - **cargo-deny**: Dependency vulnerability scanner
 - **clippy**: Rust linter with security-focused checks
 - **typos**: Spell checker to prevent typosquatting vulnerabilities
-
-Run security checks before committing:
-
-```bash
-cargo deny check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-```
 
 ### Reporting Security Issues
 
@@ -72,7 +60,7 @@ USBoverSSH is designed to share USB devices between machines securely over SSH. 
 
 - Understand which devices they are sharing and their implications
 - Ensure proper authorization before accessing remote USB devices
-- Be aware that sharing certain devices (e.g., security keys, storage devices) may have security implications
+- Be aware that sharing certain devices may have security implications
 - Follow manufacturer guidelines for device sharing
 - Use SSH tunneling to encrypt USB traffic in transit
 
@@ -88,10 +76,10 @@ USBoverSSH is designed to share USB devices between machines securely over SSH. 
 
 ### SSH Security Best Practices
 
-- **Key Management**: Use strong SSH keys (ed25519 recommended) and protect private keys with passphrases
+- **Key Management**: Use strong SSH keys and protect private keys
 - **Known Hosts**: Enable strict host key checking and verify fingerprints
 - **Agent Forwarding**: Use SSH agent forwarding cautiously and only when necessary
-- **Config File**: Secure SSH config file with appropriate permissions (600)
+- **Config File**: Secure SSH config file with appropriate permissions
 - **Disable Unused**: Disable SSH services on systems that don't need remote access
 
 ### USB/IP Security Considerations
